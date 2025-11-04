@@ -152,6 +152,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			Sleep(1000);
 			// 현재 윈도우를 숨기고
 			ShowWindow(hWnd, SW_HIDE);
+			selected_map = 0;
 			map = init_map(Desk_rect, &player, selected_map);
 			// 새로운 게임 윈도우를 생성
 			CreateGameWindow(g_hinst);
@@ -262,8 +263,6 @@ void CreateGameWindow(HINSTANCE hInstance) {
 	}
 }
 
-
-
 void CloseEditWindow(HWND hEditWnd) {
 	// 게임 윈도우를 닫고 타이틀 윈도우를 다시 보여줌
 	DestroyWindow(hEditWnd);
@@ -310,7 +309,7 @@ void CreateEditWindow(HINSTANCE hInstance) {
 LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	HDC hdc, mdc, resourcedc;
 	HBITMAP hBitmap;
-	static HBITMAP Character_bitmap, Enemy_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap,Tino_bitmap;
+	static HBITMAP Character_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap,Tino_bitmap;
 	PAINTSTRUCT ps;
 	static RECT Desk_rect;
 
@@ -332,6 +331,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		srand(time(NULL));
 		Character_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP4));
 		Enemy_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP1));
+		Enemy_rv_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP14));
 		Object_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP2));
 		Platforms_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP3));
 		BGM_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP10));
@@ -339,8 +339,9 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
 		GetWindowRect(GetDesktopWindow(), &Desk_rect);
 		window_move = true;
+		player.player_life = 3;
 
-		SetTimer(hWnd, 1, 1, (TIMERPROC)TimerProc);
+		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc);
 		break;
 	case WM_KEYDOWN:
 		switch (wParam) {
@@ -439,7 +440,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);
 
 		//맵 그리기
-		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, map);
+		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
 
 		BitBlt(hdc, 0,0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
 		DeleteDC(mdc);
@@ -567,6 +568,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				default:
 					break;
 				}
+				break;
 			}
 		}
 
@@ -814,7 +816,7 @@ int search_near(int x, int y, DrawMod curDrawmod) {
 LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	HDC hdc, mdc, resourcedc;
 	HBITMAP hBitmap;
-	static HBITMAP Character_bitmap, Enemy_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap, Tino_bitmap;
+	static HBITMAP Character_bitmap, Enemy_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap, Tino_bitmap, Enemy_rv_bitmap;
 	PAINTSTRUCT ps;
 	static RECT Desk_rect;
 
@@ -829,6 +831,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		srand(time(NULL));
 		Character_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP4));
 		Enemy_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP1));
+		Enemy_rv_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP14));
 		Object_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP2));
 		Platforms_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP3));
 		BGM_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP10));
@@ -1024,7 +1027,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		TransparentBlt(mdc, Editmap.P_start_x - Size, Editmap.P_start_y - Size, (Size * 2), (Size * 2), resourcedc, 0, 0, 150, 140, RGB(0, 0, 255));
 
 		//맵 그리기
-		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Editmap);
+		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Editmap);
 
 		//현재 그리기 모드 그리기
 		switch (curDrawmod)

@@ -1,6 +1,6 @@
 #include "Block&Object.h"
 
-void Draw_Map(HDC* mdc, HDC* resourcedc, HBITMAP Object_bitmap, HBITMAP Platforms_bitmap, HBITMAP Enemy_bitmap, Map map) {
+void Draw_Map(HDC* mdc, HDC* resourcedc, HBITMAP Object_bitmap, HBITMAP Platforms_bitmap, HBITMAP Enemy_bitmap, HBITMAP Enemy_rv_bitmap, Map map) {
 	SelectObject(*resourcedc, Platforms_bitmap);
 	for (int i = 0; i < map.block_count; i++)
 	{
@@ -22,13 +22,21 @@ void Draw_Map(HDC* mdc, HDC* resourcedc, HBITMAP Object_bitmap, HBITMAP Platform
 			break;
 		}
 	}
-
-	SelectObject(*resourcedc, Enemy_bitmap);
+	
 	for (int i = 0; i < map.enemy_count; i++)
 	{
 		if (map.enemys[i].is_alive)
 		{
-			TransparentBlt(*mdc, map.enemys[i].x - Size, map.enemys[i].y - Size, (Size * 2), (Size * 2), *resourcedc, 0, 0, 16, 16, RGB(0, 0, 255));
+			if (map.enemys[i].direction == LEFT)
+			{
+				SelectObject(*resourcedc, Enemy_bitmap);
+				TransparentBlt(*mdc, map.enemys[i].x - Size, map.enemys[i].y - Size, (Size * 2), (Size * 2), *resourcedc, 0, 0, 16, 16, RGB(0, 0, 255));
+			}
+			else
+			{
+				SelectObject(*resourcedc, Enemy_rv_bitmap);
+				TransparentBlt(*mdc, map.enemys[i].x - Size, map.enemys[i].y - Size, (Size * 2), (Size * 2), *resourcedc, 0, 0, 16, 16, RGB(0, 0, 255));
+			}
 		}
 	}
 
