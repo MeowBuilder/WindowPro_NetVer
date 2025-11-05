@@ -1,3 +1,4 @@
+#include "Packets.h"
 #include <Windows.h>
 #include <tchar.h>
 #include <time.h>
@@ -9,7 +10,6 @@
 
 #include "fmod.hpp"
 #include "fmod_errors.h"
-
 FMOD::System* ssystem;
 FMOD::Sound* sound1, * sound2, *sound3;
 FMOD::Channel* channel = 0;
@@ -25,7 +25,6 @@ enum DrawMod {
 };
 
 Map Editmap;
-
 RECT wnd_rt, window_rect, Desk_rect;
 Map map;
 int selected_map;
@@ -90,7 +89,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wcex.lpszMenuName = nullptr;
     wcex.lpszClassName = L"WindowClass";
     wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-
     if (!RegisterClassEx(&wcex)) {
         MessageBox(nullptr, L"윈도우 등록 실패", L"오류", MB_OK);
         return 1;

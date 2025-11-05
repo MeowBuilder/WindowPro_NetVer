@@ -27,6 +27,7 @@
   <ItemGroup>
     <ClInclude Include="Block&amp;Object.h" />
     <ClInclude Include="GameManager.h" />
+    <ClInclude Include="Packets.h" />
     <ClInclude Include="Player&amp;Enemy.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -100,12 +101,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Winpro\기말프로젝트\WindowPro\Game\inc;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Winpro\기말프로젝트\WindowPro\Game\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\WindowPro_NetVer\Game\inc;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\WindowPro_NetVer\Game\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Winpro\기말프로젝트\WindowPro\Game\inc;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Winpro\기말프로젝트\WindowPro\Game\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\WindowPro_NetVer\Game\inc;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\WindowPro_NetVer\Game\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -154,6 +155,7 @@
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\user\Desktop\2021182009\WindowPro_NetVer\Game\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -175,6 +177,7 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\user\Desktop\2021182009\WindowPro_NetVer\Game\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
