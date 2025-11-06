@@ -6,6 +6,9 @@
 //구조체 선언 및 공용 함수등을 정의하는 헤더파일
 
 typedef struct {
+	u_short player_id;
+	bool is_connected;
+
 	int x, y, jump_count, jump_time;
 	int Walk_state, Jump_state;
 	bool is_in_air;

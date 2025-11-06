@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
+
+#include "GameManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
 // --- 사용자 정의 자료구조 ---
@@ -154,6 +156,128 @@ public:
     void Log() const override {
         BasePacket::Log();
         printf("  Map Upload Success: %s\n", is_success ? "true" : "false");
+    }
+};
+
+// [C->S] 클라이언트가 편집한 맵 정보를 서버로 업로드하는 패킷
+// [전송 시점]: 첫 번째 클라이언트(호스트)가 맵 편집을 완료하고 '시작' 버튼을 눌렀을 때,
+//             서버로 맵 데이터를 전송하기 위해 사용됩니다.
+class CS_UploadMapPacket : public BasePacket {
+public:
+    // 블록 정보 
+    int block_count;
+    Block blocks[160];
+
+    // 오브젝트 정보 
+    int object_count;
+    Object objects[160];
+
+    // 적 생성 정보 (위치만 필요)
+    int enemy_spawn_count;
+    Point enemy_spawns[32];
+
+    // 플레이어 3명의 시작 위치
+    Point player_start_pos[3];
+
+    // 기본 생성자
+    CS_UploadMapPacket() {
+        size = sizeof(CS_UploadMapPacket);
+        type = CS_UPLOAD_MAP;
+        
+        block_count = 0;
+        object_count = 0;
+        enemy_spawn_count = 0;
+
+        memset(blocks, 0, sizeof(blocks));
+        memset(objects, 0, sizeof(objects));
+        memset(enemy_spawns, 0, sizeof(enemy_spawns));
+        memset(player_start_pos, 0, sizeof(player_start_pos));
+    }
+
+    // Rect 구조체의 엔디안을 변환하는 헬퍼 함수
+    void ConvertRectEndian(RECT& rect) {
+        rect.left = htonl(rect.left);
+        rect.top = htonl(rect.top);
+        rect.right = htonl(rect.right);
+        rect.bottom = htonl(rect.bottom);
+    }
+
+    // Rect 구조체의 엔디안을 원래대로 되돌리는 헬퍼 함수
+    void RestoreRectEndian(RECT& rect) {
+        rect.left = ntohl(rect.left);
+        rect.top = ntohl(rect.top);
+        rect.right = ntohl(rect.right);
+        rect.bottom = ntohl(rect.bottom);
+    }
+
+    // 네트워크 바이트 순서로 변환 (송신용)
+    void Encode() override {
+        block_count = htonl(block_count);
+        for (int i = 0; i < 160; ++i) {
+            blocks[i].x = htonl(blocks[i].x);
+            blocks[i].y = htonl(blocks[i].y);
+            ConvertRectEndian(blocks[i].Block_rt);
+        }
+
+        object_count = htonl(object_count);
+        for (int i = 0; i < 160; ++i) {
+            objects[i].x = htonl(objects[i].x);
+            objects[i].y = htonl(objects[i].y);
+            objects[i].obj_type = (Object_type)htonl(objects[i].obj_type);
+            ConvertRectEndian(objects[i].Obj_rt);
+        }
+
+        enemy_spawn_count = htonl(enemy_spawn_count);
+        for (int i = 0; i < 32; ++i) {
+            enemy_spawns[i].x = htonl(enemy_spawns[i].x);
+            enemy_spawns[i].y = htonl(enemy_spawns[i].y);
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            player_start_pos[i].x = htonl(player_start_pos[i].x);
+            player_start_pos[i].y = htonl(player_start_pos[i].y);
+        }
+    }
+
+    // 호스트 바이트 순서로 변환 (수신용)
+    void Decode() override {
+        block_count = ntohl(block_count);
+        for (int i = 0; i < 160; ++i) {
+            blocks[i].x = ntohl(blocks[i].x);
+            blocks[i].y = ntohl(blocks[i].y);
+            RestoreRectEndian(blocks[i].Block_rt);
+        }
+
+        object_count = ntohl(object_count);
+        for (int i = 0; i < 160; ++i) {
+            objects[i].x = ntohl(objects[i].x);
+            objects[i].y = ntohl(objects[i].y);
+            objects[i].obj_type = (Object_type)ntohl(objects[i].obj_type);
+            RestoreRectEndian(objects[i].Obj_rt);
+        }
+
+        enemy_spawn_count = ntohl(enemy_spawn_count);
+        for (int i = 0; i < 32; ++i) {
+            enemy_spawns[i].x = ntohl(enemy_spawns[i].x);
+            enemy_spawns[i].y = ntohl(enemy_spawns[i].y);
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            player_start_pos[i].x = ntohl(player_start_pos[i].x);
+            player_start_pos[i].y = ntohl(player_start_pos[i].y);
+        }
+    }
+
+    // 디버깅용 로그 출력
+    void Log() const override {
+        BasePacket::Log();
+        printf("  [Map Blueprint Data]\n");
+        printf("    Block Count: %d\n", block_count);
+        printf("    Object Count: %d\n", object_count);
+        printf("    Enemy Spawn Count: %d\n", enemy_spawn_count);
+        printf("    Player Start Pos (P0): (%d, %d)\n", player_start_pos[0].x, player_start_pos[0].y);
+        printf("    Player Start Pos (P1): (%d, %d)\n", player_start_pos[1].x, player_start_pos[1].y);
+        printf("    Player Start Pos (P2): (%d, %d)\n", player_start_pos[2].x, player_start_pos[2].y);
     }
 };
 
