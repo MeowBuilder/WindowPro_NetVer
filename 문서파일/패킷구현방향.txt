@@ -1,0 +1,42 @@
+패킷 클래스 구현 방향
+작성일: 2025-11-05
+
+네트워크 패킷 클래스의 구현 표준화를 위해 다음 가이드라인을 정합니다.
+
+1. 생성자 초기화
+- 각 패킷 클래스의 생성자에서는 BasePacket으로부터 상속받은 type과 size 멤버를 반드시 초기화한다.
+- type에는 각 패킷의 고유 ID를, size에는 sizeof(클래스명)을 대입한다.
+- 이를 통해 패킷 생성 시 정보 누락 실수를 방지하고 코드를 간소화할 수 있다.
+
+예시:
+CS_PlayerUpdatePacket() {
+    type = CS_PLAYER_UPDATE;
+    size = sizeof(CS_PlayerUpdatePacket);
+}
+
+2. 엔디안(Endian) 변환 메소드
+- 네트워크 전송 시 발생할 수 있는 엔디안 문제를 해결하기 위해, Encode()와 Decode() 메소드를 BasePacket에 가상 함수로 추가하고 각 패킷 클래스에서 재정의한다.
+- Encode(): send() 직전에 호출. int, short 등 2바이트 이상 정수형 멤버를 htonl(), htons()를 사용해 네트워크 바이트 순서로 변환한다.
+- Decode(): recv() 직후에 호출. ntohl(), ntohs()를 사용해 호스트 바이트 순서로 복원한다.
+- 이로써 엔디안 변환 로직을 외부가 아닌 클래스 내부로 캡슐화한다.
+
+예시:
+void CS_PlayerUpdatePacket::Encode() {
+    pos.x = htonl(pos.x);
+    // ... 나머지 멤버 변환
+}
+
+void CS_PlayerUpdatePacket::Decode() {
+    pos.x = ntohl(pos.x);
+    // ... 나머지 멤버 복원
+}
+
+3. 디버깅용 Log() 메소드
+- 디버깅 편의를 위해, 패킷의 현재 상태를 콘솔에 출력하는 Log() 가상 함수를 BasePacket에 추가하고 각 클래스에서 재정의한다.
+- Log() 메소드는 패킷 타입, 크기 및 주요 멤버 변수의 값을 사람이 읽기 쉬운 형태로 출력한다.
+- 송수신 데이터 확인 및 디버깅 시간을 단축시키는 것을 목표로 한다.
+
+예시:
+void CS_PlayerUpdatePacket::Log() {
+    printf("[CS_PlayerUpdatePacket] Pos: (%d, %d)\n", pos.x, pos.y);
+}

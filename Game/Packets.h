@@ -281,6 +281,28 @@ public:
     }
 };
 
+// [C->S] 게임 세션 시작을 서버에 요청하는 패킷
+// [전송 시점]: 클라이언트가 맵 업로드를 완료하고 게임 시작 준비가 되었을 때,
+//             서버에게 게임 세션을 시작해달라고 요청하기 위해 사용됩니다.
+class CS_StartSessionRequestPacket : public BasePacket {
+public:
+    // 기본 생성자
+    CS_StartSessionRequestPacket() {
+        size = sizeof(CS_StartSessionRequestPacket);
+        type = CS_START_SESSION_REQ;
+    }
+
+    // 이 패킷은 추가 데이터가 없으므로 Encode/Decode는 비어 있습니다.
+    void Encode() override {}
+    void Decode() override {}
+
+    // 디버깅용 로그 출력
+    void Log() const override {
+        BasePacket::Log();
+        printf("  [Game Session Start Request]\n");
+    }
+};
+
 #pragma pack(pop)
 
 #endif // PACKETS_H
