@@ -16,21 +16,22 @@ public:
     void Disconnect();
     void StartRecvThread();
 
+    void SendUploadMapPacket(CS_UploadMapPacket* packet);
+    void SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet);
+
+    // 게임 상태
+    u_short my_player_id;
 private:
     // 네트워크
     SOCKET sock;
     HANDLE hRecvThread;
     char recv_buffer[4096];
 
-    // 게임 상태
-    u_short my_player_id;
 
     // 패킷 처리
     bool DoRecv();
     void ProcessPacket(char* packet);
     void HandleAssignID(SC_AssignIDPacket* packet);
-    void SendUploadMapPacket(CS_UploadMapPacket* packet);
-    void SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet);
 
     // 스레드 함수
     static DWORD WINAPI ClientRecvThread(LPVOID lpParam);

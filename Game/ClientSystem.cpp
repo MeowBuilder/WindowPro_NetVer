@@ -43,7 +43,6 @@ void ClientSystem::Disconnect() {
         sock = INVALID_SOCKET;
     }
     if (hRecvThread != NULL) {
-        WaitForSingleObject(hRecvThread, INFINITE);
         CloseHandle(hRecvThread);
         hRecvThread = NULL;
     }
@@ -59,6 +58,8 @@ DWORD WINAPI ClientSystem::ClientRecvThread(LPVOID lpParam) {
         if (!client->DoRecv()) {
             break; // 오류 또는 연결 끊김
         }
+
+
     }
     printf("[Info] Receive thread finished.\n");
     return 0;
@@ -114,23 +115,13 @@ void ClientSystem::HandleAssignID(SC_AssignIDPacket* packet) {
 void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)
 {
     packet->Encode();
-    int sent = 0;
-    int need = sizeof(packet);
-    while (sent < need)
-    {
-        sent += send(sock, (char*)packet, sizeof(packet), 0);
-        printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
-    }
+    int sent = send(sock, (char*)packet, sizeof(CS_UploadMapPacket), 0);
+    printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
 }
 
 void ClientSystem::SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet)
 {
     packet->Encode();
-    int sent = 0;
-    int need = sizeof(packet);
-    while (sent < need)
-    {
-        sent += send(sock, (char*)packet, sizeof(packet), 0);
-        printf("[CLIENT] Sent CS_StartSessionRequestPacket: %d bytes\n", sent);
-    }
+    int sent = send(sock, (char*)packet, sizeof(CS_StartSessionRequestPacket), 0);
+    printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
 }

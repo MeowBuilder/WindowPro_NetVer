@@ -156,6 +156,7 @@ public:
     Point enemy_spawns[32];
     Point player_start_pos[3];
 
+
     CS_UploadMapPacket() {
         size = sizeof(CS_UploadMapPacket);
         type = CS_UPLOAD_MAP;
@@ -166,6 +167,30 @@ public:
         memset(objects, 0, sizeof(objects));
         memset(enemy_spawns, 0, sizeof(enemy_spawns));
         memset(player_start_pos, 0, sizeof(player_start_pos));
+    }
+
+    void Init(Map& map) {
+        size = sizeof(CS_UploadMapPacket);
+        type = SC_MAP_INFO;
+        block_count = map.block_count;
+        object_count = map.object_count;
+        enemy_spawn_count = map.enemy_count;
+        memset(blocks, 0, sizeof(blocks));
+        memset(objects, 0, sizeof(objects));
+        memset(enemy_spawns, 0, sizeof(enemy_spawns));
+        memset(player_start_pos, 0, sizeof(player_start_pos));
+        for (int i = 0; i < block_count; i++)
+        {
+            blocks[i] = map.blocks[i];
+        }
+        for (int i = 0; i < object_count; i++)
+        {
+            objects[i] = map.objects[i];
+        }
+        for (int i = 0; i < enemy_spawn_count; i++)
+        {
+            enemy_spawns[i] = Point(map.enemys[i].x, map.enemys[i].y);
+        }
     }
 
     void ConvertRectEndian(RECT& rect) {

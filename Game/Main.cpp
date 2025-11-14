@@ -8,6 +8,9 @@
 #include "Player&Enemy.h"
 #include "resource.h"
 
+#include "ClientSystem.h"
+#include "Packets.h"
+
 #include "fmod.hpp"
 #include "fmod_errors.h"
 FMOD::System* ssystem;
@@ -19,6 +22,8 @@ void* extradriverdata = 0;
 HINSTANCE g_hinst;
 LPCTSTR lpszClass = L"Window Class Name";
 LPCTSTR lpszWindowName = L"게임";
+
+ClientSystem client;
 
 enum DrawMod {
 	D_Block, D_Spike, D_Flag, D_Enemy, D_Boss, D_player
@@ -70,7 +75,7 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
 	return hBitmap;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     g_hinst = hInstance;
 	Clear = false;
 	selected_map = 0;
@@ -139,6 +144,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		Edit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP12, 200, 50);
 		CreateButtons(hWnd, Start_bitmap, Exit_bitmap, Edit_bitmap);
 		GetClientRect(hWnd, &Client_rect);
+
+		// 서버에 접속하기
+		client.Connect("127.0.0.1", 9000);
+		client.StartRecvThread();
 		break;
 	case WM_COMMAND:
 	{
@@ -165,6 +174,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			DeleteObject(Exit_bitmap);
 			DeleteObject(Edit_bitmap);
 			ssystem->release();
+			client.Disconnect();
 			PostQuitMessage(0);
 			break;
 		case 3:
@@ -214,6 +224,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		DeleteObject(Exit_bitmap);
 		DeleteObject(Edit_bitmap);
 		ssystem->release();
+		client.Disconnect();
         PostQuitMessage(0);
         break;
     default:
@@ -820,6 +831,8 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 
 	static DrawMod curDrawmod;
 
+	CS_UploadMapPacket UMP;
+
 	static int start_x, start_y, old_x, old_y;
 	int end_x, end_y;
 	static bool down;
@@ -966,6 +979,12 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			map = Editmap;
 			selected_map = 99;
 			CloseEditWindow(hWnd);
+
+			// 서버에 맵 정보 전송
+			UMP.Init(map);
+			UMP.player_start_pos[client.my_player_id] = Point(map.P_start_x, map.P_start_y);
+			client.SendUploadMapPacket(&UMP);
+
 			CreateGameWindow(g_hinst);
 			break;
 		case '1':
