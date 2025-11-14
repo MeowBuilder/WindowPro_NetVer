@@ -29,6 +29,8 @@ private:
     bool DoRecv();
     void ProcessPacket(char* packet);
     void HandleAssignID(SC_AssignIDPacket* packet);
+    void SendUploadMapPacket(CS_UploadMapPacket* packet);
+    void SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet);
 
     // 스레드 함수
     static DWORD WINAPI ClientRecvThread(LPVOID lpParam);

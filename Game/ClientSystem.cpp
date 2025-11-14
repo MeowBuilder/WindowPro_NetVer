@@ -110,3 +110,27 @@ void ClientSystem::HandleAssignID(SC_AssignIDPacket* packet) {
     printf("[Info] Assigned Player ID: %hu\n", my_player_id);
     // 이제 'my_player_id'를 사용하여 이 클라이언트를 식별할 수 있습니다
 }
+
+void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)
+{
+    packet->Encode();
+    int sent = 0;
+    int need = sizeof(packet);
+    while (sent < need)
+    {
+        sent += send(sock, (char*)packet, sizeof(packet), 0);
+        printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
+    }
+}
+
+void ClientSystem::SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet)
+{
+    packet->Encode();
+    int sent = 0;
+    int need = sizeof(packet);
+    while (sent < need)
+    {
+        sent += send(sock, (char*)packet, sizeof(packet), 0);
+        printf("[CLIENT] Sent CS_StartSessionRequestPacket: %d bytes\n", sent);
+    }
+}
