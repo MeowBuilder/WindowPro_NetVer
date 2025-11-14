@@ -1,11 +1,14 @@
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <cstdio>
-#include "Packets.h"
 #include <thread>
 #include <atomic>
+#include "Packets.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -13,22 +16,31 @@
 
 class ServerSystem {
 public:
-    ServerSystem(); // 생성자: 서버 초기화
-    ~ServerSystem(); // 소멸자: 리소스 해제
+    ServerSystem();   // 서버 초기화 (소켓/WSAStartup)
+    ~ServerSystem();  // 자원 해제 및 소켓 종료
 
-    bool Start(u_short port); // 서버 시작
-    bool AcceptClient(); // 클라이언트 연결 수락
-    bool DoRecv(int client_id); // 클라이언트 패킷 수신 처리
-    void ProcessPacket(char* packet, int client_id);  // 수신된 패킷 처리
-    void HandleMapUpload(CS_UploadMapPacket* packet, int client_id);  // 맵 업로드 패킷 처리
-    bool SendMapUploadResponsePacket(int client_id, bool is_success); // 맵 업로드 응답 패킷 전송
+    // 서버 기본 기능
+    bool Start(u_short port);     // 서버 소켓 생성 및 리스닝 시작
+    bool AcceptClient();          // 클라이언트 접속 수락
+    bool DoRecv(int client_id);   // 클라이언트 패킷 수신
+    void ProcessPacket(char* packet, int client_id); // 패킷 타입 분기 처리
+
+    // ==============================
+    // 패킷 처리 핸들러
+    // ==============================
+    void HandleMapUpload(CS_UploadMapPacket* packet, int client_id);      // 맵 업로드 처리
+    bool SendMapUploadResponsePacket(int client_id, bool is_success);     // 업로드 응답 전송
+
+    void HandleStartSessionRequest(CS_StartSessionRequestPacket* packet, int client_id); // 세션 시작 요청 처리
+    bool SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet);      // 맵 정보 전송
+
+    bool SendAssignIDPacket(int client_id, u_short id);                   // 클라이언트 ID 할당 패킷 전송
 
 private:
-    SOCKET m_listen;              // 서버 소켓 (리스닝용)
-    SOCKET m_clients[MAX_PLAYERS]; // 클라이언트 소켓 배열 (최대 클라이언트 수)
+    // 내부 관리용
+    SOCKET m_listen;                      // 리스닝 소켓
+    SOCKET m_clients[MAX_PLAYERS];        // 클라이언트 소켓 배열
+    CRITICAL_SECTION m_cs;                // 소켓 배열 보호용 임계영역
 
-    CRITICAL_SECTION m_cs; // 임계영역 (클라이언트 소켓 배열 보호)
-
-    void StartRecvThread(int client_id); // 클라이언트 수신 스레드 시작
-    static DWORD WINAPI ServerRecvThread(LPVOID lpParam); // 클라이언트 수신 스레드 함수
+    void StartRecvThread(int client_id);  // 수신 스레드 시작
 };
