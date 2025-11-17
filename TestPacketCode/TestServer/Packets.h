@@ -71,7 +71,7 @@ enum E_EventType { STAGE_CLEAR, GAME_WIN };
  *      - 예: p->Log();
  */
 
-// --- 패킷 구조체 정의 ---
+ // --- 패킷 구조체 정의 ---
 #pragma pack(push, 1) // 네트워크 패킷 직렬화를 위해 구조체 패딩을 1바이트로 설정
 
 // 모든 패킷의 기반이 되는 클래스 (Non-virtual)
@@ -156,6 +156,7 @@ public:
     Point enemy_spawns[32];
     Point player_start_pos[3];
 
+
     CS_UploadMapPacket() {
         size = sizeof(CS_UploadMapPacket);
         type = CS_UPLOAD_MAP;
@@ -166,6 +167,30 @@ public:
         memset(objects, 0, sizeof(objects));
         memset(enemy_spawns, 0, sizeof(enemy_spawns));
         memset(player_start_pos, 0, sizeof(player_start_pos));
+    }
+
+    void Init(Map& map) {
+        size = sizeof(CS_UploadMapPacket);
+        type = SC_MAP_INFO;
+        block_count = map.block_count;
+        object_count = map.object_count;
+        enemy_spawn_count = map.enemy_count;
+        memset(blocks, 0, sizeof(blocks));
+        memset(objects, 0, sizeof(objects));
+        memset(enemy_spawns, 0, sizeof(enemy_spawns));
+        memset(player_start_pos, 0, sizeof(player_start_pos));
+        for (int i = 0; i < block_count; i++)
+        {
+            blocks[i] = map.blocks[i];
+        }
+        for (int i = 0; i < object_count; i++)
+        {
+            objects[i] = map.objects[i];
+        }
+        for (int i = 0; i < enemy_spawn_count; i++)
+        {
+            enemy_spawns[i] = Point(map.enemys[i].x, map.enemys[i].y);
+        }
     }
 
     void ConvertRectEndian(RECT& rect) {
@@ -194,7 +219,7 @@ public:
         for (int i = 0; i < 160; ++i) {
             objects[i].x = htonl(objects[i].x);
             objects[i].y = htonl(objects[i].y);
-            objects[i].obj_type = (Object_type) htonl(objects[i].obj_type);
+            objects[i].obj_type = (Object_type)htonl(objects[i].obj_type);
             ConvertRectEndian(objects[i].Obj_rt);
         }
         enemy_spawn_count = htonl(enemy_spawn_count);
@@ -239,13 +264,13 @@ public:
         printf("  Block Count: %d\n", block_count);
         for (int i = 0; i < block_count; ++i) { // Log all blocks
             printf("    Block %d: Pos=(%d, %d), Rect=(%d, %d, %d, %d)\n",
-                   i, blocks[i].x, blocks[i].y, blocks[i].Block_rt.left, blocks[i].Block_rt.top, blocks[i].Block_rt.right, blocks[i].Block_rt.bottom);
+                i, blocks[i].x, blocks[i].y, blocks[i].Block_rt.left, blocks[i].Block_rt.top, blocks[i].Block_rt.right, blocks[i].Block_rt.bottom);
         }
 
         printf("  Object Count: %d\n", object_count);
         for (int i = 0; i < object_count; ++i) { // Log all objects
             printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%d, %d, %d, %d)\n",
-                   i, objects[i].x, objects[i].y, objects[i].obj_type, objects[i].Obj_rt.left, objects[i].Obj_rt.top, objects[i].Obj_rt.right, objects[i].Obj_rt.bottom);
+                i, objects[i].x, objects[i].y, objects[i].obj_type, objects[i].Obj_rt.left, objects[i].Obj_rt.top, objects[i].Obj_rt.right, objects[i].Obj_rt.bottom);
         }
 
         printf("  Enemy Spawn Count: %d\n", enemy_spawn_count);
@@ -327,7 +352,7 @@ public:
         for (int i = 0; i < 160; ++i) {
             objects[i].x = htonl(objects[i].x);
             objects[i].y = htonl(objects[i].y);
-            objects[i].obj_type = (Object_type) htonl(objects[i].obj_type);
+            objects[i].obj_type = (Object_type)htonl(objects[i].obj_type);
             ConvertRectEndian(objects[i].Obj_rt);
         }
         enemy_spawn_count = htonl(enemy_spawn_count);
@@ -372,13 +397,13 @@ public:
         printf("  Block Count: %d\n", block_count);
         for (int i = 0; i < block_count; ++i) { // Log all blocks
             printf("    Block %d: Pos=(%d, %d), Rect=(%d, %d, %d, %d)\n",
-                   i, blocks[i].x, blocks[i].y, blocks[i].Block_rt.left, blocks[i].Block_rt.top, blocks[i].Block_rt.right, blocks[i].Block_rt.bottom);
+                i, blocks[i].x, blocks[i].y, blocks[i].Block_rt.left, blocks[i].Block_rt.top, blocks[i].Block_rt.right, blocks[i].Block_rt.bottom);
         }
 
         printf("  Object Count: %d\n", object_count);
         for (int i = 0; i < object_count; ++i) { // Log all objects
             printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%d, %d, %d, %d)\n",
-                   i, objects[i].x, objects[i].y, objects[i].obj_type, objects[i].Obj_rt.left, objects[i].Obj_rt.top, objects[i].Obj_rt.right, objects[i].Obj_rt.bottom);
+                i, objects[i].x, objects[i].y, objects[i].obj_type, objects[i].Obj_rt.left, objects[i].Obj_rt.top, objects[i].Obj_rt.right, objects[i].Obj_rt.bottom);
         }
 
         printf("  Enemy Spawn Count: %d\n", enemy_spawn_count);
@@ -390,6 +415,38 @@ public:
         for (int i = 0; i < 3; ++i) {
             printf("    Player %d: (%d, %d)\n", i, player_start_pos[i].x, player_start_pos[i].y);
         }
+    }
+};
+
+// [S->C] 특정 게임 이벤트를 알리는 패킷
+class SC_EventPacket : public BasePacket {
+public:
+    E_EventType event_type; // 발생한 이벤트의 종류
+
+    SC_EventPacket() {
+        size = sizeof(SC_EventPacket);
+        type = SC_EVENT;
+        event_type = STAGE_CLEAR; // 기본값 설정
+    }
+
+    SC_EventPacket(E_EventType event) {
+        size = sizeof(SC_EventPacket);
+        type = SC_EVENT;
+        event_type = event;
+    }
+
+    void Encode() {
+        size = htons(size);
+        event_type = (E_EventType)htonl(event_type); // enum도 int로 간주하여 변환
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        event_type = (E_EventType)ntohl(event_type);
+    }
+
+    void Log() const {
+        printf("[SC_EventPacket] Type: %d, Size: %hu, EventType: %d\n", type, size, event_type);
     }
 };
 
@@ -438,19 +495,19 @@ public:
             players[i].walk_state = htonl(players[i].walk_state);
             players[i].jump_state = htonl(players[i].jump_state);
             players[i].frame_counter = htonl(players[i].frame_counter);
-            players[i].dir = (Direction) htonl(players[i].dir);
+            players[i].dir = (Direction)htonl(players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             enemies[i].pos.x = htonl(enemies[i].pos.x);
             enemies[i].pos.y = htonl(enemies[i].pos.y);
-            enemies[i].dir = (Direction) htonl(enemies[i].dir);
+            enemies[i].dir = (Direction)htonl(enemies[i].dir);
             enemies[i].move_state = htonl(enemies[i].move_state); // Fixed typo
         }
         boss.pos.x = htonl(boss.pos.x);
         boss.pos.y = htonl(boss.pos.y);
         boss.life = htonl(boss.life);
         boss.attack_time = htonl(boss.attack_time);
-        boss.dir = (Direction) htonl(boss.dir);
+        boss.dir = (Direction)htonl(boss.dir);
     }
 
     void Decode() {
@@ -482,18 +539,18 @@ public:
         for (int i = 0; i < 3; ++i) {
             if (!players[i].is_connected) continue;
             printf("  Player %d: Pos=(%d, %d), Life=%d, Walk=%d, Jump=%d, Frame=%d, Dir=%d\n",
-                   i, players[i].pos.x, players[i].pos.y, players[i].life,
-                   players[i].walk_state, players[i].jump_state, players[i].frame_counter, players[i].dir);
+                i, players[i].pos.x, players[i].pos.y, players[i].life,
+                players[i].walk_state, players[i].jump_state, players[i].frame_counter, players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             if (enemies[i].is_alive) {
                 printf("  Enemy %d: Pos=(%d, %d), Dir=%d, MoveState=%d\n",
-                       i, enemies[i].pos.x, enemies[i].pos.y, enemies[i].dir, enemies[i].move_state);
+                    i, enemies[i].pos.x, enemies[i].pos.y, enemies[i].dir, enemies[i].move_state);
             }
         }
         if (boss.is_active) {
             printf("  Boss: Pos=(%d, %d), Life=%d, AttackTime=%d, Dir=%d\n",
-                   boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
+                boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
         }
     }
 };

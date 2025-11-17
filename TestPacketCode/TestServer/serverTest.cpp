@@ -20,7 +20,7 @@ int RecvAll(SOCKET sock, char* buf, int len)
         int ret = recv(sock, buf + received, len - received, 0);
         if (ret <= 0)
         {
-            return ret; // 0: 연결 종료, <0: 에러
+            return ret; // 0:  , <0: 
         }
         received += ret;
     }
@@ -80,7 +80,7 @@ int main()
     printf("[SERVER] Client connected.\n");
 
     // -------------------------------
-    // S -> C : 모든 SC_* 패킷 전송
+    // S -> C :  SC_* 킷 
     // -------------------------------
 
     // 1) SC_AssignIDPacket
@@ -105,7 +105,7 @@ int main()
         printf("[SERVER] Sent SC_MapUploadResponsePacket: %d bytes\n", sent);
     }
 
-    // 3) SC_MapInfoPacket (샘플 데이터 채우기)
+    // 3) SC_MapInfoPacket (  채)
     {
         SC_MapInfoPacket pkt;
         pkt.block_count = 2;
@@ -138,7 +138,7 @@ int main()
         printf("[SERVER] Sent SC_MapInfoPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
     }
 
-    // 4) SC_GameStatePacket (샘플 데이터)
+    // 4) SC_GameStatePacket ( )
     {
         SC_GameStatePacket pkt;
         pkt.players[0].is_connected = true;
@@ -171,13 +171,35 @@ int main()
         printf("[SERVER] Sent SC_GameStatePacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
     }
 
+    // 5) SC_EventPacket (STAGE_CLEAR)
+    {
+        SC_EventPacket pkt(STAGE_CLEAR);
+        printf("\n--- TEST: SC_EventPacket (STAGE_CLEAR) (before Encode) ---\n");
+        pkt.Log();
+
+        pkt.Encode();
+        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
+        printf("[SERVER] Sent SC_EventPacket: %d bytes\n", sent);
+    }
+
+    // 6) SC_EventPacket (GAME_WIN)
+    {
+        SC_EventPacket pkt(GAME_WIN);
+        printf("\n--- TEST: SC_EventPacket (GAME_WIN) (before Encode) ---\n");
+        pkt.Log();
+
+        pkt.Encode();
+        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
+        printf("[SERVER] Sent SC_EventPacket: %d bytes\n", sent);
+    }
+
     // -------------------------------
-    // C -> S : 모든 CS_* 패킷 수신
+    // C -> S :  CS_* 킷 
     // -------------------------------
 
-    char buf[20000]; // 가장 큰 패킷보다 넉넉히
+    char buf[20000]; //  큰 킷 糠
 
-    // 1) CS_StartSessionRequestPacket 수신
+    // 1) CS_StartSessionRequestPacket 
     {
         int expected = sizeof(CS_StartSessionRequestPacket);
         int ret = RecvAll(client, buf, expected);
@@ -194,7 +216,7 @@ int main()
         }
     }
 
-    // 2) CS_UploadMapPacket 수신
+    // 2) CS_UploadMapPacket 
     {
         int expected = sizeof(CS_UploadMapPacket);
         int ret = RecvAll(client, buf, expected);

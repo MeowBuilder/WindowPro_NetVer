@@ -418,6 +418,38 @@ public:
     }
 };
 
+// [S->C] 특정 게임 이벤트를 알리는 패킷
+class SC_EventPacket : public BasePacket {
+public:
+    E_EventType event_type; // 발생한 이벤트의 종류
+
+    SC_EventPacket() {
+        size = sizeof(SC_EventPacket);
+        type = SC_EVENT;
+        event_type = STAGE_CLEAR; // 기본값 설정
+    }
+
+    SC_EventPacket(E_EventType event) {
+        size = sizeof(SC_EventPacket);
+        type = SC_EVENT;
+        event_type = event;
+    }
+
+    void Encode() {
+        size = htons(size);
+        event_type = (E_EventType)htonl(event_type); // enum도 int로 간주하여 변환
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        event_type = (E_EventType)ntohl(event_type);
+    }
+
+    void Log() const {
+        printf("[SC_EventPacket] Type: %d, Size: %hu, EventType: %d\n", type, size, event_type);
+    }
+};
+
 // [S->C] 실시간 게임 상태 동기화 패킷
 class SC_GameStatePacket : public BasePacket {
 public:

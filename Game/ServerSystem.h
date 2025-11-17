@@ -35,6 +35,7 @@ public:
     bool SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet);      // 맵 정보 전송
 
     bool SendAssignIDPacket(int client_id, u_short id);                   // 클라이언트 ID 할당 패킷 전송
+    bool SendEventPacket(int client_id, E_EventType event_type);          // 특정 이벤트 패킷 전송
 
 private:
     // 내부 관리용

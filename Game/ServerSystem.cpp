@@ -283,4 +283,21 @@ bool ServerSystem::SendAssignIDPacket(int client_id, u_short id) {
     return true;
 }
 
+// SendEventPacket()
+// 특정 게임 이벤트를 클라이언트에게 전달
+bool ServerSystem::SendEventPacket(int client_id, E_EventType event_type) {
+    SC_EventPacket event_pkt(event_type);
+    event_pkt.Encode();
+
+    int sent = send(m_clients[client_id], (char*)&event_pkt, sizeof(event_pkt), 0);
+    if (sent == SOCKET_ERROR) {
+        printf("[Error] send() failed for EventPacket: %d\n", WSAGetLastError());
+        return false;
+    }
+
+    printf("[SERVER] Sent SC_EventPacket (%d bytes) to client %d\n", sent, client_id);
+    event_pkt.Log();
+    return true;
+}
+
 #pragma endregion

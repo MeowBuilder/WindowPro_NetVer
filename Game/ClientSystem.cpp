@@ -98,6 +98,13 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandleAssignID(p);
             break;
         }
+        case SC_EVENT: {
+            SC_EventPacket* p = (SC_EventPacket*)packet_buf;
+            p->Decode(); // 네트워크 바이트 순서에서 호스트 바이트 순서로 변환
+            p->Log();    // 디버깅용
+            HandleEvent(p);
+            break;
+        }
         // 다른 패킷 처리 케이스를 여기에 추가
         default: {
             printf("[Warning] Received unknown packet type: %d\n", base_p->type);
@@ -110,6 +117,23 @@ void ClientSystem::HandleAssignID(SC_AssignIDPacket* packet) {
     my_player_id = packet->player_id;
     printf("[Info] Assigned Player ID: %hu\n", my_player_id);
     // 이제 'my_player_id'를 사용하여 이 클라이언트를 식별할 수 있습니다
+}
+
+void ClientSystem::HandleEvent(SC_EventPacket* packet) {
+    printf("[Info] Handling Event: ");
+    switch (packet->event_type) {
+        case STAGE_CLEAR:
+            printf("STAGE_CLEAR\n");
+            // TODO: 스테이지 클리어 UI 표시, 사운드 재생 등
+            break;
+        case GAME_WIN:
+            printf("GAME_WIN\n");
+            // TODO: 게임 승리 UI 표시, 게임 종료 처리 등
+            break;
+        default:
+            printf("Unknown Event Type: %d\n", packet->event_type);
+            break;
+    }
 }
 
 void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)

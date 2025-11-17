@@ -104,6 +104,14 @@ int main()
                 p->Log();
                 break;
             }
+            case SC_EVENT:
+            {
+                SC_EventPacket* p = (SC_EventPacket*)buf;
+                p->Decode();
+                printf("--- RECV: SC_EventPacket ---\n");
+                p->Log();
+                break;
+            }
             default:
                 printf("[CLIENT] Unknown packet type: %d\n", b->type);
                 break;
@@ -111,16 +119,18 @@ int main()
         };
 
     // -------------------------------
-    // S -> C : 모든 SC_* 패킷 수신
+    // S -> C :  SC_* 킷 
     // -------------------------------
     printf("=== Receiving all SC packets ===\n");
     RecvPacket(sizeof(SC_AssignIDPacket));
     RecvPacket(sizeof(SC_MapUploadResponsePacket));
     RecvPacket(sizeof(SC_MapInfoPacket));
     RecvPacket(sizeof(SC_GameStatePacket));
+    RecvPacket(sizeof(SC_EventPacket));
+    RecvPacket(sizeof(SC_EventPacket));
 
     // -------------------------------
-    // C -> S : 모든 CS_* 패킷 전송
+    // C -> S :  CS_* 킷 
     // -------------------------------
     printf("\n=== Sending ALL CS packets ===\n");
 
@@ -135,7 +145,7 @@ int main()
         printf("[CLIENT] Sent CS_StartSessionRequestPacket: %d bytes\n", sent);
     }
 
-    // 2) CS_UploadMapPacket (샘플)
+    // 2) CS_UploadMapPacket ()
     {
         CS_UploadMapPacket pkt;
         pkt.block_count = 2;
