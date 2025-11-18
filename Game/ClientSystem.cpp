@@ -58,8 +58,6 @@ DWORD WINAPI ClientSystem::ClientRecvThread(LPVOID lpParam) {
         if (!client->DoRecv()) {
             break; // 오류 또는 연결 끊김
         }
-
-
     }
     printf("[Info] Receive thread finished.\n");
     return 0;
@@ -105,6 +103,13 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandleEvent(p);
             break;
         }
+        case SC_MAP_INFO: {
+            SC_MapInfoPacket* p = (SC_MapInfoPacket*)packet_buf;
+            p->Decode(); // 네트워크 바이트 순서에서 호스트 바이트 순서로 변환
+            p->Log();    // 디버깅용
+            HandleMapInfo(p);
+            break;
+        }
         // 다른 패킷 처리 케이스를 여기에 추가
         default: {
             printf("[Warning] Received unknown packet type: %d\n", base_p->type);
@@ -134,6 +139,30 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
             printf("Unknown Event Type: %d\n", packet->event_type);
             break;
     }
+}
+
+Map ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
+{
+    Map newmap;
+    newmap.block_count = packet->block_count;
+    for (int i = 0; i < newmap.block_count; i++)
+    {
+        newmap.blocks[i] = packet->blocks[i];
+    }
+    newmap.enemy_count = packet->enemy_spawn_count;
+    for (int i = 0; i < newmap.enemy_count; i++)
+    {
+        newmap.enemys[i] = Make_Enemy(packet->enemy_spawns[i].x, packet->enemy_spawns[i].y, 0); // 패킷에서 Enemy로 넘기게 변경 필요
+    }
+    newmap.object_count = packet->object_count;
+    for (int i = 0; i < newmap.object_count; i++)
+    {
+        newmap.objects[i] = packet->objects[i];
+    }
+    newmap.P_start_x = packet->player_start_pos[my_player_id].x;
+    newmap.P_start_y = packet->player_start_pos[my_player_id].y;
+
+    //보스 추가 필요
 }
 
 void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)
