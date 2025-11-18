@@ -8,7 +8,7 @@
  * ===========================================================
  */
 
-#pragma region [서버 초기화 및 정리]
+#pragma region
 
 // 생성자: 서버 초기화 (소켓 배열, 임계영역, WSAStartup)
 ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET) {
@@ -51,7 +51,7 @@ ServerSystem::~ServerSystem() {
 #pragma endregion
 
 
-#pragma region [서버 시작 및 클라이언트 접속]
+#pragma region 
 
 // Start(): 서버 리스닝 소켓 생성 및 바인드/리스닝
 bool ServerSystem::Start(u_short port) {
@@ -116,7 +116,7 @@ bool ServerSystem::AcceptClient() {
 #pragma endregion
 
 
-#pragma region [수신 스레드 및 패킷 처리]
+#pragma region 
 
 
 // StartRecvThread(): 클라이언트별 수신 스레드 생성
@@ -184,7 +184,7 @@ void ServerSystem::ProcessPacket(char* packet, int client_id) {
 #pragma endregion
 
 
-#pragma region [패킷 핸들러 구현]
+#pragma region 
 
 // HandleMapUpload()
 // 클라이언트가 전송한 맵 데이터를 처리하고 성공 응답 전송
@@ -233,7 +233,7 @@ void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packe
     info.object_count = 1;
     info.objects[0].x = 250;
     info.objects[0].y = 260;
-    info.objects[0].obj_type = Object_type::OBJ_SPIKE;
+    info.objects[0].obj_type = Object_type::Spike;
     info.objects[0].Obj_rt = { 250, 260, 280, 290 };
 
     info.enemy_spawn_count = 1;
