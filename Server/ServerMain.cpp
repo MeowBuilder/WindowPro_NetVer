@@ -1,8 +1,8 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>
 #include <thread>
-#include <windows.h>
+#include <string>
 #include "ServerSystem.h"
 
 // ------------------------------
@@ -78,7 +78,7 @@ int main()
     while (IsRunning())
     {
         std::string cmd;
-        std::getline(std::cin, cmd);
+        getline(std::cin, cmd);
 
         if (cmd == "quit" || cmd == "exit")
         {

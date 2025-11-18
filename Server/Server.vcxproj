@@ -134,6 +134,7 @@
     <ClInclude Include="ServerSystem.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ServerMain.cpp" />
     <ClCompile Include="ServerSystem.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
