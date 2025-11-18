@@ -33,6 +33,7 @@ private:
     void ProcessPacket(char* packet);
     void HandleAssignID(SC_AssignIDPacket* packet);
     void HandleEvent(SC_EventPacket* packet);
+    Map HandleMapInfo(SC_MapInfoPacket* packet);
 
     // 스레드 함수
     static DWORD WINAPI ClientRecvThread(LPVOID lpParam);
