@@ -1,14 +1,9 @@
 #include "ServerSystem.h"
 
-/*
- * ===========================================================
- *  ServerSystem.cpp
- * ===========================================================
- */
-
 #pragma region
 
-ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET) {
+ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET)
+{
     for (int i = 0; i < MAX_PLAYERS; ++i)
         m_clients[i] = INVALID_SOCKET;
 
@@ -19,15 +14,19 @@ ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET) {
         printf("[Error] WSAStartup() failed\n");
 }
 
-ServerSystem::~ServerSystem() {
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
-        if (m_clients[i] != INVALID_SOCKET) {
+ServerSystem::~ServerSystem()
+{
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        if (m_clients[i] != INVALID_SOCKET)
+        {
             closesocket(m_clients[i]);
             m_clients[i] = INVALID_SOCKET;
         }
     }
 
-    if (m_listen != INVALID_SOCKET) {
+    if (m_listen != INVALID_SOCKET)
+    {
         closesocket(m_listen);
         m_listen = INVALID_SOCKET;
     }
@@ -39,11 +38,14 @@ ServerSystem::~ServerSystem() {
 #pragma endregion
 
 
-#pragma region
 
-bool ServerSystem::Start(u_short port) {
+#pragma region   // Server Start & Accept
+
+bool ServerSystem::Start(u_short port)
+{
     m_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (m_listen == INVALID_SOCKET) {
+    if (m_listen == INVALID_SOCKET)
+    {
         printf("[Error] socket() failed\n");
         return false;
     }
@@ -53,13 +55,15 @@ bool ServerSystem::Start(u_short port) {
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(m_listen, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR) {
+    if (bind(m_listen, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
+    {
         printf("[Error] bind() failed\n");
         closesocket(m_listen);
         return false;
     }
 
-    if (listen(m_listen, MAX_PLAYERS) == SOCKET_ERROR) {
+    if (listen(m_listen, MAX_PLAYERS) == SOCKET_ERROR)
+    {
         printf("[Error] listen() failed\n");
         closesocket(m_listen);
         return false;
@@ -69,11 +73,15 @@ bool ServerSystem::Start(u_short port) {
     return true;
 }
 
-bool ServerSystem::AcceptClient() {
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
-        if (m_clients[i] == INVALID_SOCKET) {
+bool ServerSystem::AcceptClient()
+{
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        if (m_clients[i] == INVALID_SOCKET)
+        {
             SOCKET client_sock = accept(m_listen, NULL, NULL);
-            if (client_sock == INVALID_SOCKET) {
+            if (client_sock == INVALID_SOCKET)
+            {
                 printf("[Error] accept() failed (%d)\n", WSAGetLastError());
                 return false;
             }
@@ -95,26 +103,42 @@ bool ServerSystem::AcceptClient() {
 #pragma endregion
 
 
-#pragma region
 
-void ServerSystem::StartRecvThread(int client_id) {
-    std::thread([this, client_id] {
-        while (m_clients[client_id] != INVALID_SOCKET) {
+#pragma region   // Recv Thread & Packet Processing
+
+void ServerSystem::StartRecvThread(int client_id)
+{
+    std::thread([this, client_id]
+    {
+        while (m_clients[client_id] != INVALID_SOCKET)
+        {
             if (!DoRecv(client_id))
                 break;
         }
+
         printf("[SERVER] Recv thread for client %d ended.\n", client_id);
+
+        EnterCriticalSection(&m_cs);
+        if (m_clients[client_id] != INVALID_SOCKET)
+        {
+            closesocket(m_clients[client_id]);
+            m_clients[client_id] = INVALID_SOCKET;
+        }
+        LeaveCriticalSection(&m_cs);
+
     }).detach();
 }
 
-bool ServerSystem::DoRecv(int client_id) {
+
+bool ServerSystem::DoRecv(int client_id)
+{
     char recv_buffer[4096];
+
     int recv_len = recv(m_clients[client_id], recv_buffer, sizeof(recv_buffer), 0);
 
-    if (recv_len <= 0) {
+    if (recv_len <= 0)
+    {
         printf("[SERVER] Client %d disconnected.\n", client_id);
-        closesocket(m_clients[client_id]);
-        m_clients[client_id] = INVALID_SOCKET;
         return false;
     }
 
@@ -122,42 +146,51 @@ bool ServerSystem::DoRecv(int client_id) {
     return true;
 }
 
-void ServerSystem::ProcessPacket(char* packet, int client_id) {
+void ServerSystem::ProcessPacket(char* packet, int client_id)
+{
     BasePacket* base_p = (BasePacket*)packet;
-    printf("[SERVER] Received packet type: %d from client %d\n", base_p->type, client_id);
 
-    switch (base_p->type) {
-    case CS_UPLOAD_MAP: {
-        auto* map_packet = (CS_UploadMapPacket*)packet;
-        map_packet->Decode();
-        map_packet->Log();
-        HandleMapUpload(map_packet, client_id);
-        break;
-    }
-    case CS_START_SESSION_REQ: {
-        auto* start_packet = (CS_StartSessionRequestPacket*)packet;
-        start_packet->Decode();
-        start_packet->Log();
-        HandleStartSessionRequest(start_packet, client_id);
-        break;
-    }
-    default:
-        printf("[Warning] Unknown packet type: %d\n", base_p->type);
-        break;
+    printf("[SERVER] Received packet type: %d from client %d\n",
+           base_p->type, client_id);
+
+    switch (base_p->type)
+    {
+        case CS_UPLOAD_MAP:
+        {
+            auto* p = (CS_UploadMapPacket*)packet;
+            p->Decode();
+            p->Log();
+            HandleMapUpload(p, client_id);
+            break;
+        }
+
+        case CS_START_SESSION_REQ:
+        {
+            auto* p = (CS_StartSessionRequestPacket*)packet;
+            p->Decode();
+            p->Log();
+
+            // 클라이언트 패킷에는 map_number가 없음 → 기본 0으로 처리
+            HandleStartSessionRequest(0, client_id);
+            break;
+        }
+
+        default:
+            printf("[Warning] Unknown packet type %d\n", base_p->type);
+            break;
     }
 }
 
 #pragma endregion
 
 
-#pragma region
 
-void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id) {
-    printf("[SERVER] Handling CS_UploadMapPacket from client %d\n", client_id);
+#pragma region   // Map Upload / Start Session
 
-    //
-    // 제작맵: 클라이언트 업로드 → server_map에 저장
-    //
+void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
+{
+    printf("[SERVER] Handling map upload from client %d\n", client_id);
+
     server_map.block_count = packet->block_count;
     memcpy(server_map.blocks, packet->blocks, sizeof(packet->blocks));
 
@@ -168,102 +201,100 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id) {
     for (int i = 0; i < packet->enemy_spawn_count; i++)
         server_map.enemys[i] = Make_Enemy(packet->enemy_spawns[i].x, packet->enemy_spawns[i].y, 0);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
+    {
         server_map.P_start_x[i] = packet->player_start_pos[i].x;
         server_map.P_start_y[i] = packet->player_start_pos[i].y;
     }
 
     SendMapUploadResponsePacket(client_id, true);
 
-    //
-    // 맵 정보 전체 전송
-    //
-    SC_MapInfoPacket info;
-    memcpy(&info, &server_map, sizeof(info));
+    // 모든 클라이언트에 전송
+    BroadcastMapInfo();
+}
 
+void ServerSystem::HandleStartSessionRequest(int map_number, int client_id)
+{
+    printf("[SERVER] StartSessionRequest (client %d, map_number=%d)\n",
+           client_id, map_number);
+
+    // 기본 맵
+    LoadDefaultMap(map_number);
+
+    BroadcastMapInfo();
+}
+
+void ServerSystem::BroadcastMapInfo()
+{
     for (int i = 0; i < MAX_PLAYERS; i++)
+    {
         if (m_clients[i] != INVALID_SOCKET)
+        {
+            SC_MapInfoPacket info;
+
+            info.block_count = server_map.block_count;
+            memcpy(info.blocks, server_map.blocks, sizeof(info.blocks));
+
+            info.object_count = server_map.object_count;
+            memcpy(info.objects, server_map.objects, sizeof(info.objects));
+
+            info.enemy_spawn_count = server_map.enemy_count;
+
+            for (int e = 0; e < server_map.enemy_count; e++)
+            {
+                info.enemy_spawns[e].x = server_map.enemys[e].x;
+                info.enemy_spawns[e].y = server_map.enemys[e].y;
+            }
+
+            for (int p = 0; p < 3; p++)
+            {
+                info.player_start_pos[p].x = server_map.P_start_x[p];
+                info.player_start_pos[p].y = server_map.P_start_y[p];
+            }
+
             SendMapInfoPacket(i, &info);
-}
-
-bool ServerSystem::SendMapUploadResponsePacket(int client_id, bool is_success) {
-    SC_MapUploadResponsePacket rsp(is_success);
-    rsp.Encode();
-
-    int sent = send(m_clients[client_id], (char*)&rsp, sizeof(rsp), 0);
-    return (sent != SOCKET_ERROR);
-}
-
-void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packet, int client_id) {
-    printf("[SERVER] Handling CS_StartSessionRequestPacket from client %d\n", client_id);
-    printf("[SERVER] map_number = %d\n", packet->map_number);
-
-    //
-    // map_number == 0 → 제작맵 (UploadMapPacket을 기다림)
-    //
-    if (packet->map_number == 0) {
-        printf("[SERVER] 제작 맵 모드. UploadMapPacket을 기다립니다.\n");
-        return;
+        }
     }
-
-    //
-    // 기본 맵 → init_map 사용하여 server_map 로드
-    //
-    LoadDefaultMap(packet->map_number);
-
-    //
-    // 전체 클라에 MapInfo 전송
-    //
-    SC_MapInfoPacket info;
-    memcpy(&info, &server_map, sizeof(info));
-
-    for (int i = 0; i < MAX_PLAYERS; i++)
-        if (m_clients[i] != INVALID_SOCKET)
-            SendMapInfoPacket(i, &info);
 }
 
-bool ServerSystem::SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet) {
-    packet->Encode();
-    int sent = send(m_clients[client_id], (char*)packet, sizeof(*packet), 0);
+bool ServerSystem::SendMapUploadResponsePacket(int client_id, bool success)
+{
+    SC_MapUploadResponsePacket p(success);
+    p.Encode();
+    send(m_clients[client_id], (char*)&p, sizeof(p), 0);
+    return true;
+}
 
-    if (sent == SOCKET_ERROR) {
-        printf("[Error] send() failed (client %d)\n", client_id);
+bool ServerSystem::SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet)
+{
+    packet->Encode();
+
+    int sent = send(m_clients[client_id],
+                    (char*)packet,
+                    sizeof(*packet), 0);
+
+    if (sent == SOCKET_ERROR)
+    {
+        printf("[Error] Failed sending MapInfo to client %d\n", client_id);
         return false;
     }
+
     packet->Log();
-    return true;
-}
-
-bool ServerSystem::SendAssignIDPacket(int client_id, u_short id) {
-    SC_AssignIDPacket assign(id);
-    assign.Encode();
-
-    send(m_clients[client_id], (char*)&assign, sizeof(assign), 0);
-    return true;
-}
-
-bool ServerSystem::SendEventPacket(int client_id, E_EventType event_type) {
-    SC_EventPacket pkt(event_type);
-    pkt.Encode();
-
-    send(m_clients[client_id], (char*)&pkt, sizeof(pkt), 0);
     return true;
 }
 
 #pragma endregion
 
 
-#pragma region
 
-//
-// init_map을 서버에서 사용 가능하게 만드는 함수 
-//
+#pragma region   // Default Map Load
+
 void ServerSystem::LoadDefaultMap(int map_number)
 {
-    printf("[SERVER] init_map() 호출: map_number = %d\n", map_number);
+    printf("[SERVER] init_map(%d) 호출\n", map_number);
 
-    RECT desk_rt = {0, 0, 1920, 1080}; // 서버 고정 RECT
-    Player dummy_players[3];            // 더미 플레이어
+    RECT desk_rt = {0, 0, 1920, 1080};
+    Player dummy_players[3];
 
     init_map(server_map, desk_rt, dummy_players, map_number);
 }
