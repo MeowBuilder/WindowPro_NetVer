@@ -1,4 +1,4 @@
-#include "ServerSystem.h"
+﻿#include "ServerSystem.h"
 
 #pragma region Constructor / Destructor
 
@@ -170,10 +170,10 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
     for (int i = 0; i < server_map.enemy_count; i++)
         server_map.enemys[i] = Make_Enemy(packet->enemy_spawns[i].x, packet->enemy_spawns[i].y, 0);
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 1; i++)
     {
-        server_map.P_start_x[i] = packet->player_start_pos[i].x;
-        server_map.P_start_y[i] = packet->player_start_pos[i].y;
+        server_map.P_start_x = packet->player_start_pos[i].x;
+        server_map.P_start_y = packet->player_start_pos[i].y;
     }
 
     SendMapUploadResponsePacket(client_id, true);
@@ -210,10 +210,10 @@ void ServerSystem::BroadcastMapInfo()
                 info.enemy_spawns[e].y = server_map.enemys[e].y;
             }
 
-            for (int p = 0; p < 3; p++)
+            for (int p = 0; p < 1; p++)
             {
-                info.player_start_pos[p].x = server_map.P_start_x[p];
-                info.player_start_pos[p].y = server_map.P_start_y[p];
+                info.player_start_pos[0].x = server_map.P_start_x;
+                info.player_start_pos[0].y = server_map.P_start_y;
             }
 
             SendMapInfoPacket(i, &info);
@@ -269,7 +269,7 @@ void ServerSystem::LoadDefaultMap(int map_num)
     RECT desk_rt = {0, 0, 1920, 1080};
     Player dummy_players[3];
 
-    init_map(server_map, desk_rt, dummy_players, map_num);
+    server_map = init_map(desk_rt, dummy_players, map_num);
 }
 
 #pragma endregion
