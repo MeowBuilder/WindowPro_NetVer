@@ -44,6 +44,7 @@ void Draw_Map(HDC* mdc, HDC* resourcedc, HBITMAP Object_bitmap, HBITMAP Platform
 	{
 		for (int i = 0; i < map.boss_count; i++)
 		{
+			SelectObject(*resourcedc, Enemy_bitmap);
 			TransparentBlt(*mdc, map.boss.boss_rect.left, map.boss.boss_rect.top, map.boss.boss_rect.right - map.boss.boss_rect.left, map.boss.boss_rect.bottom - map.boss.boss_rect.top, *resourcedc, 0, 0, 16, 16, RGB(0, 0, 255));
 		}
 	}

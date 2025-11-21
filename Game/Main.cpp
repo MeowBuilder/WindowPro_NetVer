@@ -144,7 +144,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		Edit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP12, 200, 50);
 		CreateButtons(hWnd, Start_bitmap, Exit_bitmap, Edit_bitmap);
 		GetClientRect(hWnd, &Client_rect);
-
+		client.my_player_id = 0;
 		// 서버에 접속하기
 		client.Connect("127.0.0.1", 9000);
 		client.StartRecvThread();
@@ -487,8 +487,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 		if (!IntersectRect(&temp_rt, &player.player_rt, &Desk_rect))//맵 밖으로 떨어짐
 		{
-			player.x = map.P_start_x;
-			player.y = map.P_start_y;
+			player.x = map.P_Start_Loc[0].x;
+			player.y = map.P_Start_Loc[0].y;
 			player.DOWN = false;
 			player.is_in_air = false;
 			window_move = true;
@@ -552,8 +552,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				switch (map.objects[i].obj_type)
 				{
 				case Spike://가시 충돌
-					player.x = map.P_start_x;
-					player.y = map.P_start_y;
+					player.x = map.P_Start_Loc[0].x;
+					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
 					window_move = true;
@@ -568,8 +568,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 						CreateEditWindow(g_hinst);
 					}
 					map = init_map(Desk_rect, &player, ++selected_map);
-					player.x = map.P_start_x;
-					player.y = map.P_start_y;
+					player.x = map.P_Start_Loc[0].x;
+					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
 					window_move = true;
@@ -593,8 +593,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					}
 					else
 					{
-						player.x = map.P_start_x;
-						player.y = map.P_start_y;
+						player.x = map.P_Start_Loc[0].x;
+						player.y = map.P_Start_Loc[0].y;
 						player.DOWN = false;
 						player.is_in_air = false;
 						window_move = true;
@@ -689,8 +689,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 						selected_map = 0;
 						CloseGameWindow(hWnd);
 					}
-					player.x = map.P_start_x;
-					player.y = map.P_start_y;
+					player.x = map.P_Start_Loc[0].x;
+					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
 					window_move = true;
@@ -698,8 +698,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				}
 				else
 				{
-					player.x = map.P_start_x;
-					player.y = map.P_start_y;
+					player.x = map.P_Start_Loc[0].x;
+					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
 					window_move = true;
@@ -756,8 +756,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			}
 
 			map.boss.attack_time--;
-			map.P_start_x = map.blocks[0].x;
-			map.P_start_y = map.blocks[0].Block_rt.top - Size;
+			map.P_Start_Loc[0].x = map.blocks[0].x;
+			map.P_Start_Loc[0].y = map.blocks[0].Block_rt.top - Size;
 		}
 		break;
 	default:
@@ -853,6 +853,8 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		curDrawmod = D_Block;
 		break;
 	case WM_LBUTTONDOWN:
+		if (client.my_player_id != 0) break;
+
 		start_y = old_y = HIWORD(lParam);//윈도우 기중 좌표로 변환
 		start_x = old_x = LOWORD(lParam);
 		switch (curDrawmod)
@@ -888,18 +890,20 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			Editmap.boss.y = start_y;
 			Editmap.boss.life = 3;
 			Editmap.boss.boss_rect = { Editmap.boss.x - 160,Editmap.boss.y - 160,Editmap.boss.x + 160,Editmap.boss.y + 160 };
-			Editmap.boss_count++;
+			Editmap.boss_count = 1;
 			break;
 		case D_player:
-			Editmap.P_start_x = start_x;
-			Editmap.P_start_y = start_y;
-			player = Make_Player(Editmap.P_start_x, Editmap.P_start_y);
+			Editmap.P_Start_Loc[0].x = start_x;
+			Editmap.P_Start_Loc[0].y = start_y;
+			player = Make_Player(Editmap.P_Start_Loc[0].x, Editmap.P_Start_Loc[0].y);
 			break;
 		default:
 			break;
 		}
 		break;
 	case WM_MOUSEMOVE:
+		if (client.my_player_id != 0) break;
+
 		if (down)
 		{
 			end_x = LOWORD(lParam);
@@ -925,6 +929,8 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		}
 		break;
 	case WM_RBUTTONDOWN:
+		if (client.my_player_id != 0) break;
+
 		start_y = old_y = HIWORD(lParam);
 		start_x = old_x = LOWORD(lParam);
 		switch (curDrawmod)
@@ -964,15 +970,16 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			Editmap.boss_count = 0;
 			break;
 		case D_player:
-			Editmap.P_start_x = 0;
-			Editmap.P_start_y = 0;
-			player = Make_Player(Editmap.P_start_x, Editmap.P_start_y);
+			Editmap.P_Start_Loc[0].x = 0;
+			Editmap.P_Start_Loc[0].y = 0;
+			player = Make_Player(Editmap.P_Start_Loc[0].x, Editmap.P_Start_Loc[0].y);
 			break;
 		default:
 			break;
 		}
 		break;
 	case WM_CHAR:
+		if (client.my_player_id != 0) break;
 		switch (wParam)
 		{
 		case 's': case 'S': //테스트
@@ -982,7 +989,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 
 			// 서버에 맵 정보 전송
 			UMP.Init(map);
-			UMP.player_start_pos[client.my_player_id] = Point(map.P_start_x, map.P_start_y);
+			UMP.player_start_pos[client.my_player_id] = Point(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
 			client.SendUploadMapPacket(&UMP);
 
 			CreateGameWindow(g_hinst);
@@ -1041,7 +1048,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 
 		//캐릭터 그리기
 		SelectObject(resourcedc, Tino_bitmap);
-		TransparentBlt(mdc, Editmap.P_start_x - Size, Editmap.P_start_y - Size, (Size * 2), (Size * 2), resourcedc, 0, 0, 150, 140, RGB(0, 0, 255));
+		TransparentBlt(mdc, Editmap.P_Start_Loc[0].x - Size, Editmap.P_Start_Loc[0].y - Size, (Size * 2), (Size * 2), resourcedc, 0, 0, 150, 140, RGB(0, 0, 255));
 
 		//맵 그리기
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Editmap);

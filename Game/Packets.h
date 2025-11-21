@@ -15,13 +15,6 @@
 #include "GameManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
-// --- 사용자 정의 자료구조 ---
-// 프로젝트 계획서에 정의된 좌표 구조체
-struct Point
-{
-    int x;
-    int y;
-};
 // --- 패킷 타입 정의 ---
 // Client -> Server
 constexpr char CS_UPLOAD_MAP = 0;
@@ -148,6 +141,7 @@ public:
 // [C->S] 클라이언트가 편집한 맵 정보를 서버로 업로드하는 패킷
 class CS_UploadMapPacket : public BasePacket {
 public:
+    //Map UploadMap으로 변경 하기//
     int block_count;
     Block blocks[160];
     int object_count;
@@ -306,6 +300,7 @@ public:
 // [S->C] 확정된 게임 맵 정보를 모든 클라이언트에게 전송하는 패킷
 class SC_MapInfoPacket : public BasePacket {
 public:
+    //Map mapInfo로 변경 하기//
     int block_count;
     Block blocks[160];
     int object_count;

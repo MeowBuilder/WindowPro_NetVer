@@ -159,10 +159,12 @@ Map ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
     {
         newmap.objects[i] = packet->objects[i];
     }
-    newmap.P_start_x = packet->player_start_pos[my_player_id].x;
-    newmap.P_start_y = packet->player_start_pos[my_player_id].y;
+    newmap.P_Start_Loc[0].x = packet->player_start_pos[my_player_id].x;
+    newmap.P_Start_Loc[0].y = packet->player_start_pos[my_player_id].y;
 
     //보스 추가 필요
+
+    return newmap;
 }
 
 void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)

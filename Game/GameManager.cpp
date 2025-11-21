@@ -87,8 +87,8 @@ Map init_map(RECT Desk_rect, Player* player, int map_num) {
 		new_map.object_count++;
 
 		//플레이어 생성
-		new_map.P_start_x = Desk_rect.left + 64;
-		new_map.P_start_y = Desk_rect.bottom - 128;
+		new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
 		break;
 	case 1://1번 맵
 
@@ -136,8 +136,8 @@ Map init_map(RECT Desk_rect, Player* player, int map_num) {
 		new_map.object_count++;
 		
 		//플레이어 생성
-		new_map.P_start_x = Desk_rect.left + 64;
-		new_map.P_start_y = Desk_rect.bottom - 128;
+		new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
 		break;
 	case 2://2번 맵
 
@@ -192,8 +192,8 @@ Map init_map(RECT Desk_rect, Player* player, int map_num) {
 		new_map.object_count++;
 
 		//플레이어 생성
-		new_map.P_start_x = Desk_rect.left + 64;
-		new_map.P_start_y = Desk_rect.bottom - 128;
+		new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
 		break;
 	case 3://3번 맵(보스전)
 
@@ -226,16 +226,16 @@ Map init_map(RECT Desk_rect, Player* player, int map_num) {
 		new_map.boss.attack_time = 480;
 
 		//플레이어 생성
-		new_map.P_start_x = new_map.blocks[0].x;
-		new_map.P_start_y = new_map.blocks[0].Block_rt.top - Size;
+		new_map.P_Start_Loc[0].x = new_map.blocks[0].x;
+		new_map.P_Start_Loc[0].y = new_map.blocks[0].Block_rt.top - Size;
 		break;
 	default:
 		//플레이어 생성
-		new_map.P_start_x = Desk_rect.right/2;
-		new_map.P_start_y = Desk_rect.bottom/2;
+		new_map.P_Start_Loc[0].x = Desk_rect.right/2;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom/2;
 		break;
 	}
 
-	*player = Make_Player(new_map.P_start_x, new_map.P_start_y);
+	*player = Make_Player(new_map.P_Start_Loc[0].x, new_map.P_Start_Loc[0].y);
 	return new_map;
 }

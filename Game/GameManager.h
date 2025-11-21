@@ -5,6 +5,12 @@
 
 //구조체 선언 및 공용 함수등을 정의하는 헤더파일
 
+struct Point
+{
+	int x;
+	int y;
+};
+
 typedef struct {
 	u_short player_id;
 	bool is_connected;
@@ -68,7 +74,8 @@ typedef struct {
 	Boss boss;
 	int boss_count;
 
-	int P_start_x, P_start_y;
+	Point P_Start_Loc[3];
+	//int P_Start_Loc[0].x, P_Start_Loc[0].y;
 }Map;
 
 Map init_map(RECT Desk_rect, Player* player, int map_num);
