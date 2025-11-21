@@ -148,27 +148,30 @@ int main()
     // 2) CS_UploadMapPacket ()
     {
         CS_UploadMapPacket pkt;
-        pkt.block_count = 2;
-        pkt.blocks[0].x = 111;
-        pkt.blocks[0].y = 222;
-        pkt.blocks[0].Block_rt = { 0, 0, 32, 32 };
+        
+        Map& testMap = pkt.UploadMap; // Get a reference for easier access
+        testMap.block_count = 2;
+        testMap.blocks[0].x = 111;
+        testMap.blocks[0].y = 222;
+        testMap.blocks[0].Block_rt = { 0, 0, 32, 32 };
 
-        pkt.blocks[1].x = 333;
-        pkt.blocks[1].y = 444;
-        pkt.blocks[1].Block_rt = { 32, 32, 64, 64 };
+        testMap.blocks[1].x = 333;
+        testMap.blocks[1].y = 444;
+        testMap.blocks[1].Block_rt = { 32, 32, 64, 64 };
 
-        pkt.object_count = 1;
-        pkt.objects[0].x = 777;
-        pkt.objects[0].y = 888;
-        pkt.objects[0].obj_type = Flag;
-        pkt.objects[0].Obj_rt = { 0, 0, 16, 16 };
+        testMap.object_count = 1;
+        testMap.objects[0].x = 777;
+        testMap.objects[0].y = 888;
+        testMap.objects[0].obj_type = Flag;
+        testMap.objects[0].Obj_rt = { 0, 0, 16, 16 };
 
-        pkt.enemy_spawn_count = 1;
-        pkt.enemy_spawns[0].x = 999;
-        pkt.enemy_spawns[0].y = 1000;
+        testMap.enemy_count = 1;
+        testMap.enemys[0].x = 999;
+        testMap.enemys[0].y = 1000;
+        // The other fields of enemy are not initialized, but that's fine for this test.
 
-        pkt.player_start_pos[0].x = 10;
-        pkt.player_start_pos[0].y = 20;
+        testMap.P_Start_Loc[0].x = 10;
+        testMap.P_Start_Loc[0].y = 20;
 
         printf("\n--- SEND: CS_UploadMapPacket (before Encode) ---\n");
         pkt.Log();

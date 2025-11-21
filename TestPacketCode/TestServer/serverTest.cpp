@@ -108,27 +108,29 @@ int main()
     // 3) SC_MapInfoPacket (  ä)
     {
         SC_MapInfoPacket pkt;
-        pkt.block_count = 2;
-        pkt.blocks[0].x = 100;
-        pkt.blocks[0].y = 200;
-        pkt.blocks[0].Block_rt = { 0, 0, 32, 32 };
+        Map& testMap = pkt.mapInfo; // Get a reference for easier access
 
-        pkt.blocks[1].x = 300;
-        pkt.blocks[1].y = 400;
-        pkt.blocks[1].Block_rt = { 32, 32, 64, 64 };
+        testMap.block_count = 2;
+        testMap.blocks[0].x = 100;
+        testMap.blocks[0].y = 200;
+        testMap.blocks[0].Block_rt = { 0, 0, 32, 32 };
 
-        pkt.object_count = 1;
-        pkt.objects[0].x = 500;
-        pkt.objects[0].y = 600;
-        pkt.objects[0].obj_type = Spike;
-        pkt.objects[0].Obj_rt = { 0, 0, 16, 16 };
+        testMap.blocks[1].x = 300;
+        testMap.blocks[1].y = 400;
+        testMap.blocks[1].Block_rt = { 32, 32, 64, 64 };
 
-        pkt.enemy_spawn_count = 1;
-        pkt.enemy_spawns[0].x = 700;
-        pkt.enemy_spawns[0].y = 800;
+        testMap.object_count = 1;
+        testMap.objects[0].x = 500;
+        testMap.objects[0].y = 600;
+        testMap.objects[0].obj_type = Spike;
+        testMap.objects[0].Obj_rt = { 0, 0, 16, 16 };
 
-        pkt.player_start_pos[0].x = 10;
-        pkt.player_start_pos[0].y = 20;
+        testMap.enemy_count = 1;
+        testMap.enemys[0].x = 700;
+        testMap.enemys[0].y = 800;
+
+        testMap.P_Start_Loc[0].x = 10;
+        testMap.P_Start_Loc[0].y = 20;
 
         printf("\n--- TEST: SC_MapInfoPacket (before Encode) ---\n");
         pkt.Log();

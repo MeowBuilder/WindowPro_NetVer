@@ -1,4 +1,4 @@
-﻿#ifndef PACKETS_H
+#ifndef PACKETS_H
 #define PACKETS_H
 
 #pragma once
@@ -15,13 +15,6 @@
 #include "GameManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
-// --- 사용자 정의 자료구조 ---
-// 프로젝트 계획서에 정의된 좌표 구조체
-struct Point
-{
-    int x;
-    int y;
-};
 // --- 패킷 타입 정의 ---
 // Client -> Server
 constexpr char CS_UPLOAD_MAP = 0;
@@ -71,7 +64,7 @@ enum E_EventType { STAGE_CLEAR, GAME_WIN };
  *      - 예: p->Log();
  */
 
- // --- 패킷 구조체 정의 ---
+// --- 패킷 구조체 정의 ---
 #pragma pack(push, 1) // 네트워크 패킷 직렬화를 위해 구조체 패딩을 1바이트로 설정
 
 // 모든 패킷의 기반이 되는 클래스 (Non-virtual)
@@ -148,49 +141,19 @@ public:
 // [C->S] 클라이언트가 편집한 맵 정보를 서버로 업로드하는 패킷
 class CS_UploadMapPacket : public BasePacket {
 public:
-    int block_count;
-    Block blocks[160];
-    int object_count;
-    Object objects[160];
-    int enemy_spawn_count;
-    Point enemy_spawns[32];
-    Point player_start_pos[3];
-
+    Map UploadMap;
 
     CS_UploadMapPacket() {
         size = sizeof(CS_UploadMapPacket);
         type = CS_UPLOAD_MAP;
-        block_count = 0;
-        object_count = 0;
-        enemy_spawn_count = 0;
-        memset(blocks, 0, sizeof(blocks));
-        memset(objects, 0, sizeof(objects));
-        memset(enemy_spawns, 0, sizeof(enemy_spawns));
-        memset(player_start_pos, 0, sizeof(player_start_pos));
+        memset(&UploadMap, 0, sizeof(Map));
     }
 
-    void Init(Map& map) {
+    void Init(const Map& map) {
+        UploadMap = map;
+        // Ensure size and type are set correctly after initialization
         size = sizeof(CS_UploadMapPacket);
-        type = SC_MAP_INFO;
-        block_count = map.block_count;
-        object_count = map.object_count;
-        enemy_spawn_count = map.enemy_count;
-        memset(blocks, 0, sizeof(blocks));
-        memset(objects, 0, sizeof(objects));
-        memset(enemy_spawns, 0, sizeof(enemy_spawns));
-        memset(player_start_pos, 0, sizeof(player_start_pos));
-        for (int i = 0; i < block_count; i++)
-        {
-            blocks[i] = map.blocks[i];
-        }
-        for (int i = 0; i < object_count; i++)
-        {
-            objects[i] = map.objects[i];
-        }
-        for (int i = 0; i < enemy_spawn_count; i++)
-        {
-            enemy_spawns[i] = Point(map.enemys[i].x, map.enemys[i].y);
-        }
+        type = CS_UPLOAD_MAP;
     }
 
     void ConvertRectEndian(RECT& rect) {
@@ -209,78 +172,120 @@ public:
 
     void Encode() {
         size = htons(size);
-        block_count = htonl(block_count);
+
+        UploadMap.Map_width = htonl(UploadMap.Map_width);
+        UploadMap.Map_height = htonl(UploadMap.Map_height);
+        UploadMap.block_count = htonl(UploadMap.block_count);
+        UploadMap.object_count = htonl(UploadMap.object_count);
+        UploadMap.enemy_count = htonl(UploadMap.enemy_count);
+        UploadMap.boss_count = htonl(UploadMap.boss_count);
+
         for (int i = 0; i < 160; ++i) {
-            blocks[i].x = htonl(blocks[i].x);
-            blocks[i].y = htonl(blocks[i].y);
-            ConvertRectEndian(blocks[i].Block_rt);
+            UploadMap.blocks[i].x = htonl(UploadMap.blocks[i].x);
+            UploadMap.blocks[i].y = htonl(UploadMap.blocks[i].y);
+            ConvertRectEndian(UploadMap.blocks[i].Block_rt);
         }
-        object_count = htonl(object_count);
+
         for (int i = 0; i < 160; ++i) {
-            objects[i].x = htonl(objects[i].x);
-            objects[i].y = htonl(objects[i].y);
-            objects[i].obj_type = (Object_type)htonl(objects[i].obj_type);
-            ConvertRectEndian(objects[i].Obj_rt);
+            UploadMap.objects[i].x = htonl(UploadMap.objects[i].x);
+            UploadMap.objects[i].y = htonl(UploadMap.objects[i].y);
+            UploadMap.objects[i].obj_type = (Object_type) htonl(UploadMap.objects[i].obj_type);
+            ConvertRectEndian(UploadMap.objects[i].Obj_rt);
         }
-        enemy_spawn_count = htonl(enemy_spawn_count);
+
         for (int i = 0; i < 32; ++i) {
-            enemy_spawns[i].x = htonl(enemy_spawns[i].x);
-            enemy_spawns[i].y = htonl(enemy_spawns[i].y);
+            UploadMap.enemys[i].x = htonl(UploadMap.enemys[i].x);
+            UploadMap.enemys[i].y = htonl(UploadMap.enemys[i].y);
+            ConvertRectEndian(UploadMap.enemys[i].enemy_rect);
+            UploadMap.enemys[i].direction = (Direction) htonl(UploadMap.enemys[i].direction);
+            UploadMap.enemys[i].move_state = htonl(UploadMap.enemys[i].move_state);
+            UploadMap.enemys[i].on_block = htonl(UploadMap.enemys[i].on_block);
         }
+        
+        UploadMap.boss.x = htonl(UploadMap.boss.x);
+        UploadMap.boss.y = htonl(UploadMap.boss.y);
+        ConvertRectEndian(UploadMap.boss.boss_rect);
+        UploadMap.boss.life = htonl(UploadMap.boss.life);
+        UploadMap.boss.attack_time = htonl(UploadMap.boss.attack_time);
+
         for (int i = 0; i < 3; ++i) {
-            player_start_pos[i].x = htonl(player_start_pos[i].x);
-            player_start_pos[i].y = htonl(player_start_pos[i].y);
+            UploadMap.P_Start_Loc[i].x = htonl(UploadMap.P_Start_Loc[i].x);
+            UploadMap.P_Start_Loc[i].y = htonl(UploadMap.P_Start_Loc[i].y);
         }
     }
 
     void Decode() {
         size = ntohs(size);
-        block_count = ntohl(block_count);
+
+        UploadMap.Map_width = ntohl(UploadMap.Map_width);
+        UploadMap.Map_height = ntohl(UploadMap.Map_height);
+        UploadMap.block_count = ntohl(UploadMap.block_count);
+        UploadMap.object_count = ntohl(UploadMap.object_count);
+        UploadMap.enemy_count = ntohl(UploadMap.enemy_count);
+        UploadMap.boss_count = ntohl(UploadMap.boss_count);
+
         for (int i = 0; i < 160; ++i) {
-            blocks[i].x = ntohl(blocks[i].x);
-            blocks[i].y = ntohl(blocks[i].y);
-            RestoreRectEndian(blocks[i].Block_rt);
+            UploadMap.blocks[i].x = ntohl(UploadMap.blocks[i].x);
+            UploadMap.blocks[i].y = ntohl(UploadMap.blocks[i].y);
+            RestoreRectEndian(UploadMap.blocks[i].Block_rt);
         }
-        object_count = ntohl(object_count);
+
         for (int i = 0; i < 160; ++i) {
-            objects[i].x = ntohl(objects[i].x);
-            objects[i].y = ntohl(objects[i].y);
-            objects[i].obj_type = (Object_type)ntohl(objects[i].obj_type);
-            RestoreRectEndian(objects[i].Obj_rt);
+            UploadMap.objects[i].x = ntohl(UploadMap.objects[i].x);
+            UploadMap.objects[i].y = ntohl(UploadMap.objects[i].y);
+            UploadMap.objects[i].obj_type = (Object_type) ntohl(UploadMap.objects[i].obj_type);
+            RestoreRectEndian(UploadMap.objects[i].Obj_rt);
         }
-        enemy_spawn_count = ntohl(enemy_spawn_count);
+
         for (int i = 0; i < 32; ++i) {
-            enemy_spawns[i].x = ntohl(enemy_spawns[i].x);
-            enemy_spawns[i].y = ntohl(enemy_spawns[i].y);
+            UploadMap.enemys[i].x = ntohl(UploadMap.enemys[i].x);
+            UploadMap.enemys[i].y = ntohl(UploadMap.enemys[i].y);
+            RestoreRectEndian(UploadMap.enemys[i].enemy_rect);
+            UploadMap.enemys[i].direction = (Direction) ntohl(UploadMap.enemys[i].direction);
+            UploadMap.enemys[i].move_state = ntohl(UploadMap.enemys[i].move_state);
+            UploadMap.enemys[i].on_block = ntohl(UploadMap.enemys[i].on_block);
         }
+
+        UploadMap.boss.x = ntohl(UploadMap.boss.x);
+        UploadMap.boss.y = ntohl(UploadMap.boss.y);
+        RestoreRectEndian(UploadMap.boss.boss_rect);
+        UploadMap.boss.life = ntohl(UploadMap.boss.life);
+        UploadMap.boss.attack_time = ntohl(UploadMap.boss.attack_time);
+
         for (int i = 0; i < 3; ++i) {
-            player_start_pos[i].x = ntohl(player_start_pos[i].x);
-            player_start_pos[i].y = ntohl(player_start_pos[i].y);
+            UploadMap.P_Start_Loc[i].x = ntohl(UploadMap.P_Start_Loc[i].x);
+            UploadMap.P_Start_Loc[i].y = ntohl(UploadMap.P_Start_Loc[i].y);
         }
     }
 
     void Log() const {
         printf("[CS_UploadMapPacket] Type: %d, Size: %hu\n", type, size);
-        printf("  Block Count: %d\n", block_count);
-        for (int i = 0; i < block_count; ++i) { // Log all blocks
-            printf("    Block %d: Pos=(%d, %d), Rect=(%d, %d, %d, %d)\n",
-                i, blocks[i].x, blocks[i].y, blocks[i].Block_rt.left, blocks[i].Block_rt.top, blocks[i].Block_rt.right, blocks[i].Block_rt.bottom);
+        printf("  Map Width: %d, Map Height: %d\n", UploadMap.Map_width, UploadMap.Map_height);
+        printf("  Block Count: %d\n", UploadMap.block_count);
+        for (int i = 0; i < UploadMap.block_count; ++i) {
+            printf("    Block %d: Pos=(%d, %d), Rect=(%ld, %ld, %ld, %ld)\n",
+                   i, UploadMap.blocks[i].x, UploadMap.blocks[i].y, UploadMap.blocks[i].Block_rt.left, UploadMap.blocks[i].Block_rt.top, UploadMap.blocks[i].Block_rt.right, UploadMap.blocks[i].Block_rt.bottom);
         }
 
-        printf("  Object Count: %d\n", object_count);
-        for (int i = 0; i < object_count; ++i) { // Log all objects
-            printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%d, %d, %d, %d)\n",
-                i, objects[i].x, objects[i].y, objects[i].obj_type, objects[i].Obj_rt.left, objects[i].Obj_rt.top, objects[i].Obj_rt.right, objects[i].Obj_rt.bottom);
+        printf("  Object Count: %d\n", UploadMap.object_count);
+        for (int i = 0; i < UploadMap.object_count; ++i) {
+            printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%ld, %ld, %ld, %ld)\n",
+                   i, UploadMap.objects[i].x, UploadMap.objects[i].y, UploadMap.objects[i].obj_type, UploadMap.objects[i].Obj_rt.left, UploadMap.objects[i].Obj_rt.top, UploadMap.objects[i].Obj_rt.right, UploadMap.objects[i].Obj_rt.bottom);
         }
 
-        printf("  Enemy Spawn Count: %d\n", enemy_spawn_count);
-        for (int i = 0; i < enemy_spawn_count; ++i) { // Log all enemy spawns
-            printf("    Enemy Spawn %d: Pos=(%d, %d)\n", i, enemy_spawns[i].x, enemy_spawns[i].y);
+        printf("  Enemy Count: %d\n", UploadMap.enemy_count);
+        for (int i = 0; i < UploadMap.enemy_count; ++i) {
+            printf("    Enemy %d: Pos=(%d, %d)\n", i, UploadMap.enemys[i].x, UploadMap.enemys[i].y);
+        }
+        
+        printf("  Boss Count: %d\n", UploadMap.boss_count);
+        if (UploadMap.boss_count > 0) {
+            printf("    Boss: Pos=(%d, %d), Life=%d\n", UploadMap.boss.x, UploadMap.boss.y, UploadMap.boss.life);
         }
 
         printf("  Player Start Positions:\n");
         for (int i = 0; i < 3; ++i) {
-            printf("    Player %d: (%d, %d)\n", i, player_start_pos[i].x, player_start_pos[i].y);
+            printf("    Player %d: (%d, %d)\n", i, UploadMap.P_Start_Loc[i].x, UploadMap.P_Start_Loc[i].y);
         }
     }
 };
@@ -306,24 +311,19 @@ public:
 // [S->C] 확정된 게임 맵 정보를 모든 클라이언트에게 전송하는 패킷
 class SC_MapInfoPacket : public BasePacket {
 public:
-    int block_count;
-    Block blocks[160];
-    int object_count;
-    Object objects[160];
-    int enemy_spawn_count;
-    Point enemy_spawns[32];
-    Point player_start_pos[3];
+    Map mapInfo;
 
     SC_MapInfoPacket() {
         size = sizeof(SC_MapInfoPacket);
         type = SC_MAP_INFO;
-        block_count = 0;
-        object_count = 0;
-        enemy_spawn_count = 0;
-        memset(blocks, 0, sizeof(blocks));
-        memset(objects, 0, sizeof(objects));
-        memset(enemy_spawns, 0, sizeof(enemy_spawns));
-        memset(player_start_pos, 0, sizeof(player_start_pos));
+        memset(&mapInfo, 0, sizeof(Map));
+    }
+    
+    void Init(const Map& map) {
+        mapInfo = map;
+        // Ensure size and type are set correctly after initialization
+        size = sizeof(SC_MapInfoPacket);
+        type = SC_MAP_INFO;
     }
 
     void ConvertRectEndian(RECT& rect) {
@@ -342,78 +342,120 @@ public:
 
     void Encode() {
         size = htons(size);
-        block_count = htonl(block_count);
+
+        mapInfo.Map_width = htonl(mapInfo.Map_width);
+        mapInfo.Map_height = htonl(mapInfo.Map_height);
+        mapInfo.block_count = htonl(mapInfo.block_count);
+        mapInfo.object_count = htonl(mapInfo.object_count);
+        mapInfo.enemy_count = htonl(mapInfo.enemy_count);
+        mapInfo.boss_count = htonl(mapInfo.boss_count);
+
         for (int i = 0; i < 160; ++i) {
-            blocks[i].x = htonl(blocks[i].x);
-            blocks[i].y = htonl(blocks[i].y);
-            ConvertRectEndian(blocks[i].Block_rt);
+            mapInfo.blocks[i].x = htonl(mapInfo.blocks[i].x);
+            mapInfo.blocks[i].y = htonl(mapInfo.blocks[i].y);
+            ConvertRectEndian(mapInfo.blocks[i].Block_rt);
         }
-        object_count = htonl(object_count);
+
         for (int i = 0; i < 160; ++i) {
-            objects[i].x = htonl(objects[i].x);
-            objects[i].y = htonl(objects[i].y);
-            objects[i].obj_type = (Object_type)htonl(objects[i].obj_type);
-            ConvertRectEndian(objects[i].Obj_rt);
+            mapInfo.objects[i].x = htonl(mapInfo.objects[i].x);
+            mapInfo.objects[i].y = htonl(mapInfo.objects[i].y);
+            mapInfo.objects[i].obj_type = (Object_type) htonl(mapInfo.objects[i].obj_type);
+            ConvertRectEndian(mapInfo.objects[i].Obj_rt);
         }
-        enemy_spawn_count = htonl(enemy_spawn_count);
+
         for (int i = 0; i < 32; ++i) {
-            enemy_spawns[i].x = htonl(enemy_spawns[i].x);
-            enemy_spawns[i].y = htonl(enemy_spawns[i].y);
+            mapInfo.enemys[i].x = htonl(mapInfo.enemys[i].x);
+            mapInfo.enemys[i].y = htonl(mapInfo.enemys[i].y);
+            ConvertRectEndian(mapInfo.enemys[i].enemy_rect);
+            mapInfo.enemys[i].direction = (Direction) htonl(mapInfo.enemys[i].direction);
+            mapInfo.enemys[i].move_state = htonl(mapInfo.enemys[i].move_state);
+            mapInfo.enemys[i].on_block = htonl(mapInfo.enemys[i].on_block);
         }
+        
+        mapInfo.boss.x = htonl(mapInfo.boss.x);
+        mapInfo.boss.y = htonl(mapInfo.boss.y);
+        ConvertRectEndian(mapInfo.boss.boss_rect);
+        mapInfo.boss.life = htonl(mapInfo.boss.life);
+        mapInfo.boss.attack_time = htonl(mapInfo.boss.attack_time);
+
         for (int i = 0; i < 3; ++i) {
-            player_start_pos[i].x = htonl(player_start_pos[i].x);
-            player_start_pos[i].y = htonl(player_start_pos[i].y);
+            mapInfo.P_Start_Loc[i].x = htonl(mapInfo.P_Start_Loc[i].x);
+            mapInfo.P_Start_Loc[i].y = htonl(mapInfo.P_Start_Loc[i].y);
         }
     }
 
     void Decode() {
         size = ntohs(size);
-        block_count = ntohl(block_count);
+
+        mapInfo.Map_width = ntohl(mapInfo.Map_width);
+        mapInfo.Map_height = ntohl(mapInfo.Map_height);
+        mapInfo.block_count = ntohl(mapInfo.block_count);
+        mapInfo.object_count = ntohl(mapInfo.object_count);
+        mapInfo.enemy_count = ntohl(mapInfo.enemy_count);
+        mapInfo.boss_count = ntohl(mapInfo.boss_count);
+
         for (int i = 0; i < 160; ++i) {
-            blocks[i].x = ntohl(blocks[i].x);
-            blocks[i].y = ntohl(blocks[i].y);
-            RestoreRectEndian(blocks[i].Block_rt);
+            mapInfo.blocks[i].x = ntohl(mapInfo.blocks[i].x);
+            mapInfo.blocks[i].y = ntohl(mapInfo.blocks[i].y);
+            RestoreRectEndian(mapInfo.blocks[i].Block_rt);
         }
-        object_count = ntohl(object_count);
+
         for (int i = 0; i < 160; ++i) {
-            objects[i].x = ntohl(objects[i].x);
-            objects[i].y = ntohl(objects[i].y);
-            objects[i].obj_type = (Object_type)ntohl(objects[i].obj_type);
-            RestoreRectEndian(objects[i].Obj_rt);
+            mapInfo.objects[i].x = ntohl(mapInfo.objects[i].x);
+            mapInfo.objects[i].y = ntohl(mapInfo.objects[i].y);
+            mapInfo.objects[i].obj_type = (Object_type) ntohl(mapInfo.objects[i].obj_type);
+            RestoreRectEndian(mapInfo.objects[i].Obj_rt);
         }
-        enemy_spawn_count = ntohl(enemy_spawn_count);
+
         for (int i = 0; i < 32; ++i) {
-            enemy_spawns[i].x = ntohl(enemy_spawns[i].x);
-            enemy_spawns[i].y = ntohl(enemy_spawns[i].y);
+            mapInfo.enemys[i].x = ntohl(mapInfo.enemys[i].x);
+            mapInfo.enemys[i].y = ntohl(mapInfo.enemys[i].y);
+            RestoreRectEndian(mapInfo.enemys[i].enemy_rect);
+            mapInfo.enemys[i].direction = (Direction) ntohl(mapInfo.enemys[i].direction);
+            mapInfo.enemys[i].move_state = ntohl(mapInfo.enemys[i].move_state);
+            mapInfo.enemys[i].on_block = ntohl(mapInfo.enemys[i].on_block);
         }
+
+        mapInfo.boss.x = ntohl(mapInfo.boss.x);
+        mapInfo.boss.y = ntohl(mapInfo.boss.y);
+        RestoreRectEndian(mapInfo.boss.boss_rect);
+        mapInfo.boss.life = ntohl(mapInfo.boss.life);
+        mapInfo.boss.attack_time = ntohl(mapInfo.boss.attack_time);
+
         for (int i = 0; i < 3; ++i) {
-            player_start_pos[i].x = ntohl(player_start_pos[i].x);
-            player_start_pos[i].y = ntohl(player_start_pos[i].y);
+            mapInfo.P_Start_Loc[i].x = ntohl(mapInfo.P_Start_Loc[i].x);
+            mapInfo.P_Start_Loc[i].y = ntohl(mapInfo.P_Start_Loc[i].y);
         }
     }
 
     void Log() const {
         printf("[SC_MapInfoPacket] Type: %d, Size: %hu\n", type, size);
-        printf("  Block Count: %d\n", block_count);
-        for (int i = 0; i < block_count; ++i) { // Log all blocks
-            printf("    Block %d: Pos=(%d, %d), Rect=(%d, %d, %d, %d)\n",
-                i, blocks[i].x, blocks[i].y, blocks[i].Block_rt.left, blocks[i].Block_rt.top, blocks[i].Block_rt.right, blocks[i].Block_rt.bottom);
+        printf("  Map Width: %d, Map Height: %d\n", mapInfo.Map_width, mapInfo.Map_height);
+        printf("  Block Count: %d\n", mapInfo.block_count);
+        for (int i = 0; i < mapInfo.block_count; ++i) {
+            printf("    Block %d: Pos=(%d, %d), Rect=(%ld, %ld, %ld, %ld)\n",
+                   i, mapInfo.blocks[i].x, mapInfo.blocks[i].y, mapInfo.blocks[i].Block_rt.left, mapInfo.blocks[i].Block_rt.top, mapInfo.blocks[i].Block_rt.right, mapInfo.blocks[i].Block_rt.bottom);
         }
 
-        printf("  Object Count: %d\n", object_count);
-        for (int i = 0; i < object_count; ++i) { // Log all objects
-            printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%d, %d, %d, %d)\n",
-                i, objects[i].x, objects[i].y, objects[i].obj_type, objects[i].Obj_rt.left, objects[i].Obj_rt.top, objects[i].Obj_rt.right, objects[i].Obj_rt.bottom);
+        printf("  Object Count: %d\n", mapInfo.object_count);
+        for (int i = 0; i < mapInfo.object_count; ++i) {
+            printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%ld, %ld, %ld, %ld)\n",
+                   i, mapInfo.objects[i].x, mapInfo.objects[i].y, mapInfo.objects[i].obj_type, mapInfo.objects[i].Obj_rt.left, mapInfo.objects[i].Obj_rt.top, mapInfo.objects[i].Obj_rt.right, mapInfo.objects[i].Obj_rt.bottom);
         }
 
-        printf("  Enemy Spawn Count: %d\n", enemy_spawn_count);
-        for (int i = 0; i < enemy_spawn_count; ++i) { // Log all enemy spawns
-            printf("    Enemy Spawn %d: Pos=(%d, %d)\n", i, enemy_spawns[i].x, enemy_spawns[i].y);
+        printf("  Enemy Count: %d\n", mapInfo.enemy_count);
+        for (int i = 0; i < mapInfo.enemy_count; ++i) {
+            printf("    Enemy %d: Pos=(%d, %d)\n", i, mapInfo.enemys[i].x, mapInfo.enemys[i].y);
+        }
+        
+        printf("  Boss Count: %d\n", mapInfo.boss_count);
+        if (mapInfo.boss_count > 0) {
+            printf("    Boss: Pos=(%d, %d), Life=%d\n", mapInfo.boss.x, mapInfo.boss.y, mapInfo.boss.life);
         }
 
         printf("  Player Start Positions:\n");
         for (int i = 0; i < 3; ++i) {
-            printf("    Player %d: (%d, %d)\n", i, player_start_pos[i].x, player_start_pos[i].y);
+            printf("    Player %d: (%d, %d)\n", i, mapInfo.P_Start_Loc[i].x, mapInfo.P_Start_Loc[i].y);
         }
     }
 };
@@ -437,12 +479,12 @@ public:
 
     void Encode() {
         size = htons(size);
-        event_type = (E_EventType)htonl(event_type); // enum도 int로 간주하여 변환
+        event_type = (E_EventType) htonl(event_type); // enum도 int로 간주하여 변환
     }
 
     void Decode() {
         size = ntohs(size);
-        event_type = (E_EventType)ntohl(event_type);
+        event_type = (E_EventType) ntohl(event_type);
     }
 
     void Log() const {
@@ -495,19 +537,19 @@ public:
             players[i].walk_state = htonl(players[i].walk_state);
             players[i].jump_state = htonl(players[i].jump_state);
             players[i].frame_counter = htonl(players[i].frame_counter);
-            players[i].dir = (Direction)htonl(players[i].dir);
+            players[i].dir = (Direction) htonl(players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             enemies[i].pos.x = htonl(enemies[i].pos.x);
             enemies[i].pos.y = htonl(enemies[i].pos.y);
-            enemies[i].dir = (Direction)htonl(enemies[i].dir);
+            enemies[i].dir = (Direction) htonl(enemies[i].dir);
             enemies[i].move_state = htonl(enemies[i].move_state); // Fixed typo
         }
         boss.pos.x = htonl(boss.pos.x);
         boss.pos.y = htonl(boss.pos.y);
         boss.life = htonl(boss.life);
         boss.attack_time = htonl(boss.attack_time);
-        boss.dir = (Direction)htonl(boss.dir);
+        boss.dir = (Direction) htonl(boss.dir);
     }
 
     void Decode() {
@@ -519,19 +561,19 @@ public:
             players[i].walk_state = ntohl(players[i].walk_state);
             players[i].jump_state = ntohl(players[i].jump_state);
             players[i].frame_counter = ntohl(players[i].frame_counter);
-            players[i].dir = (Direction)ntohl(players[i].dir);
+            players[i].dir = (Direction) ntohl(players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             enemies[i].pos.x = ntohl(enemies[i].pos.x);
             enemies[i].pos.y = ntohl(enemies[i].pos.y);
-            enemies[i].dir = (Direction)ntohl(enemies[i].dir);
+            enemies[i].dir = (Direction) ntohl(enemies[i].dir);
             enemies[i].move_state = ntohl(enemies[i].move_state); // Fixed typo
         }
         boss.pos.x = ntohl(boss.pos.x);
         boss.pos.y = ntohl(boss.pos.y);
         boss.life = ntohl(boss.life);
         boss.attack_time = ntohl(boss.attack_time);
-        boss.dir = (Direction)ntohl(boss.dir);
+        boss.dir = (Direction) ntohl(boss.dir);
     }
 
     void Log() const {
@@ -539,18 +581,18 @@ public:
         for (int i = 0; i < 3; ++i) {
             if (!players[i].is_connected) continue;
             printf("  Player %d: Pos=(%d, %d), Life=%d, Walk=%d, Jump=%d, Frame=%d, Dir=%d\n",
-                i, players[i].pos.x, players[i].pos.y, players[i].life,
-                players[i].walk_state, players[i].jump_state, players[i].frame_counter, players[i].dir);
+                   i, players[i].pos.x, players[i].pos.y, players[i].life,
+                   players[i].walk_state, players[i].jump_state, players[i].frame_counter, players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             if (enemies[i].is_alive) {
                 printf("  Enemy %d: Pos=(%d, %d), Dir=%d, MoveState=%d\n",
-                    i, enemies[i].pos.x, enemies[i].pos.y, enemies[i].dir, enemies[i].move_state);
+                       i, enemies[i].pos.x, enemies[i].pos.y, enemies[i].dir, enemies[i].move_state);
             }
         }
         if (boss.is_active) {
             printf("  Boss: Pos=(%d, %d), Life=%d, AttackTime=%d, Dir=%d\n",
-                boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
+                   boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
         }
     }
 };
