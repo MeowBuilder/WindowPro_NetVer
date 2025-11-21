@@ -30,7 +30,7 @@ public:
     // ==============================
     // 패킷 처리 핸들러
     // ==============================
-    void HandleMapUpload(CS_UploadMapPacket* packet, int client_id);      // 맵 업로드 처리
+    void HandleStartSessionRequest(int map_number, int client_id);      // 맵 업로드 처리
     bool SendMapUploadResponsePacket(int client_id, bool is_success);     // 업로드 응답 전송
 
     void HandleStartSessionRequest(CS_StartSessionRequestPacket* packet, int client_id); // 세션 시작 요청 처리
