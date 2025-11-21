@@ -9,6 +9,8 @@
 #include <thread>
 #include <atomic>
 #include "Packets.h"
+#include "GameManager.h"   // init_map() 사용을 위해 추가
+
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -44,4 +46,8 @@ private:
     CRITICAL_SECTION m_cs;                // 소켓 배열 보호용 임계영역
 
     void StartRecvThread(int client_id);  // 수신 스레드 시작
+
+    //  추가된 멤버
+    Map server_map;         // 서버에서 유지하는 최종 맵
+    void LoadDefaultMap(int map_num); // init_map() 호출용
 };
