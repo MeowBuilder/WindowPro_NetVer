@@ -308,6 +308,38 @@ public:
     }
 };
 
+// [C->S] 게임 세션 종료를 서버에 요청하는 패킷
+class CS_EndSessionRequestPacket : public BasePacket {
+public:
+    u_short player_id; // 세션 종료를 요청하는 클라이언트의 ID
+
+    CS_EndSessionRequestPacket() {
+        size = sizeof(CS_EndSessionRequestPacket);
+        type = CS_END_SESSION_REQ;
+        player_id = (u_short)-1;
+    }
+
+    CS_EndSessionRequestPacket(u_short id) {
+        size = sizeof(CS_EndSessionRequestPacket);
+        type = CS_END_SESSION_REQ;
+        player_id = id;
+    }
+
+    void Encode() {
+        size = htons(size);
+        player_id = htons(player_id);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        player_id = ntohs(player_id);
+    }
+
+    void Log() const {
+        printf("[CS_EndSessionRequestPacket] Type: %d, Size: %hu, PlayerID: %hu\n", type, size, player_id);
+    }
+};
+
 // [S->C] 확정된 게임 맵 정보를 모든 클라이언트에게 전송하는 패킷
 class SC_MapInfoPacket : public BasePacket {
 public:

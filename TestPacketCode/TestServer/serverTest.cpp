@@ -235,6 +235,23 @@ int main()
         }
     }
 
+    // 3) CS_EndSessionRequestPacket 
+    {
+        int expected = sizeof(CS_EndSessionRequestPacket);
+        int ret = RecvAll(client, buf, expected);
+        if (ret != expected)
+        {
+            printf("[SERVER] Recv CS_EndSessionRequestPacket failed: %d / %d\n", ret, expected);
+        }
+        else
+        {
+            CS_EndSessionRequestPacket* p = (CS_EndSessionRequestPacket*)buf;
+            p->Decode();
+            printf("\n--- RECV: CS_EndSessionRequestPacket ---\n");
+            p->Log();
+        }
+    }
+
     printf("\n[SERVER] Test sequence done. Closing.\n");
 
     closesocket(client);

@@ -146,6 +146,14 @@ void ServerSystem::ProcessPacket(char* packet, int client_id)
             break;
         }
 
+        case CS_END_SESSION_REQ:
+        {
+            auto* p = (CS_EndSessionRequestPacket*)packet;
+            p->Decode();
+            HandleEndSessionRequest(p, client_id);
+            break;
+        }
+
         default:
             printf("[Warning] Unknown packet type %d\n", base->type);
             break;
@@ -160,21 +168,7 @@ void ServerSystem::ProcessPacket(char* packet, int client_id)
 
 void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
 {
-    server_map.block_count = packet->block_count;
-    memcpy(server_map.blocks, packet->blocks, sizeof(packet->blocks));
-
-    server_map.object_count = packet->object_count;
-    memcpy(server_map.objects, packet->objects, sizeof(packet->objects));
-
-    server_map.enemy_count = packet->enemy_spawn_count;
-    for (int i = 0; i < server_map.enemy_count; i++)
-        server_map.enemys[i] = Make_Enemy(packet->enemy_spawns[i].x, packet->enemy_spawns[i].y, 0);
-
-    for (int i = 0; i < 1; i++)
-    {
-        server_map.P_start_x = packet->player_start_pos[i].x;
-        server_map.P_start_y = packet->player_start_pos[i].y;
-    }
+    server_map = packet->UploadMap;
 
     SendMapUploadResponsePacket(client_id, true);
     BroadcastMapInfo();
@@ -195,30 +189,35 @@ void ServerSystem::BroadcastMapInfo()
         if (m_clients[i] != INVALID_SOCKET)
         {
             SC_MapInfoPacket info;
-
-            info.block_count = server_map.block_count;
-            memcpy(info.blocks, server_map.blocks, sizeof(info.blocks));
-
-            info.object_count = server_map.object_count;
-            memcpy(info.objects, server_map.objects, sizeof(info.objects));
-
-            info.enemy_spawn_count = server_map.enemy_count;
-
-            for (int e = 0; e < server_map.enemy_count; e++)
-            {
-                info.enemy_spawns[e].x = server_map.enemys[e].x;
-                info.enemy_spawns[e].y = server_map.enemys[e].y;
-            }
-
-            for (int p = 0; p < 1; p++)
-            {
-                info.player_start_pos[0].x = server_map.P_start_x;
-                info.player_start_pos[0].y = server_map.P_start_y;
-            }
-
+            info.Init(server_map);
             SendMapInfoPacket(i, &info);
         }
     }
+}
+
+#pragma endregion
+
+
+#pragma region Session Management
+
+void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, int client_id)
+{
+    // 패킷에 포함된 ID와 실제 패킷을 받은 클라이언트의 ID가 일치하는지 확인
+    if (packet->player_id != client_id) {
+        printf("[Warning] Mismatched player ID in session end request. Recv from client %d, but packet says %hu.\n", client_id, packet->player_id);
+    }
+
+    printf("[SERVER] Client %d (ID: %hu) requested to end session.\n", client_id, packet->player_id);
+
+    EnterCriticalSection(&m_cs);
+    if (m_clients[client_id] != INVALID_SOCKET) {
+        closesocket(m_clients[client_id]);
+        m_clients[client_id] = INVALID_SOCKET;
+        printf("[SERVER] Client %d disconnected and socket closed.\n", client_id);
+    }
+    LeaveCriticalSection(&m_cs);
+
+    // 해당 클라이언트의 수신 스레드는 DoRecv()가 실패하거나 m_clients[client_id]가 INVALID_SOCKET이 되어 자동으로 종료됩니다.
 }
 
 #pragma endregion

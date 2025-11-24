@@ -143,28 +143,7 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
 
 Map ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 {
-    Map newmap;
-    newmap.block_count = packet->block_count;
-    for (int i = 0; i < newmap.block_count; i++)
-    {
-        newmap.blocks[i] = packet->blocks[i];
-    }
-    newmap.enemy_count = packet->enemy_spawn_count;
-    for (int i = 0; i < newmap.enemy_count; i++)
-    {
-        newmap.enemys[i] = Make_Enemy(packet->enemy_spawns[i].x, packet->enemy_spawns[i].y, 0); // 패킷에서 Enemy로 넘기게 변경 필요
-    }
-    newmap.object_count = packet->object_count;
-    for (int i = 0; i < newmap.object_count; i++)
-    {
-        newmap.objects[i] = packet->objects[i];
-    }
-    newmap.P_Start_Loc[0].x = packet->player_start_pos[my_player_id].x;
-    newmap.P_Start_Loc[0].y = packet->player_start_pos[my_player_id].y;
-
-    //보스 추가 필요
-
-    return newmap;
+    return packet->mapInfo;
 }
 
 void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)
@@ -179,4 +158,30 @@ void ClientSystem::SendStartSessionRequestPacket(CS_StartSessionRequestPacket* p
     packet->Encode();
     int sent = send(sock, (char*)packet, sizeof(CS_StartSessionRequestPacket), 0);
     printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
+}
+
+bool ClientSystem::SendEndSessionRequestPacket() {
+    if (sock == INVALID_SOCKET) {
+        printf("[Error] Cannot send CS_EndSessionRequestPacket: Not connected to server.\n");
+        return false;
+    }
+    if (my_player_id == (u_short)-1) {
+        printf("[Error] Cannot send CS_EndSessionRequestPacket: Player ID not assigned.\n");
+        return false;
+    }
+
+    CS_EndSessionRequestPacket packet(my_player_id); // Create packet with player ID
+    packet.Encode(); // Convert to network byte order
+
+    int sent_bytes = send(sock, (char*)&packet, sizeof(CS_EndSessionRequestPacket), 0);
+    if (sent_bytes == SOCKET_ERROR) {
+        printf("[Error] send() CS_EndSessionRequestPacket failed: %d\n", WSAGetLastError());
+        return false;
+    }
+    if (sent_bytes != sizeof(CS_EndSessionRequestPacket)) {
+        printf("[Warning] Sent %d bytes for CS_EndSessionRequestPacket, expected %zu\n", sent_bytes, sizeof(CS_EndSessionRequestPacket));
+    }
+    
+    printf("[Info] Sent CS_EndSessionRequestPacket for player ID %hu, %d bytes.\n", my_player_id, sent_bytes);
+    return true;
 }

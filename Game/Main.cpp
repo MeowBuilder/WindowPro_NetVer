@@ -21,7 +21,7 @@ void* extradriverdata = 0;
 
 HINSTANCE g_hinst;
 LPCTSTR lpszClass = L"Window Class Name";
-LPCTSTR lpszWindowName = L"°ÔÀÓ";
+LPCTSTR lpszWindowName = L"ï¿½ï¿½ï¿½ï¿½";
 
 ClientSystem client;
 
@@ -95,14 +95,14 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
     wcex.lpszClassName = L"WindowClass";
     wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
     if (!RegisterClassEx(&wcex)) {
-        MessageBox(nullptr, L"À©µµ¿ì µî·Ï ½ÇÆÐ", L"¿À·ù", MB_OK);
+        MessageBox(nullptr, L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½", L"ï¿½ï¿½ï¿½ï¿½", MB_OK);
         return 1;
     }
 	
-	HWND hWnd = CreateWindow(L"WindowClass", L"Å¸ÀÌÆ² È­¸é", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
+	HWND hWnd = CreateWindow(L"WindowClass", L"Å¸ï¿½ï¿½Æ² È­ï¿½ï¿½", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
-        MessageBox(nullptr, L"À©µµ¿ì »ý¼º ½ÇÆÐ", L"¿À·ù", MB_OK);
+        MessageBox(nullptr, L"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½", L"ï¿½ï¿½ï¿½ï¿½", MB_OK);
         return 1;
     }
 
@@ -124,13 +124,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	static RECT Client_rect;
     switch (message) {
 	case WM_CREATE:
-		result = FMOD::System_Create(&ssystem); //--- »ç¿îµå ½Ã½ºÅÛ »ý¼º
+		result = FMOD::System_Create(&ssystem); //--- ï¿½ï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (result != FMOD_OK)
 			exit(0);
-		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- »ç¿îµå ½Ã½ºÅÛ ÃÊ±âÈ­
-		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1¹ø »ç¿îµå »ý¼º ¹× ¼³Á¤
-		ssystem->createSound("button.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2¹ø »ç¿îµå »ý¼º ¹× ¼³Á¤
-		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3¹ø »ç¿îµå »ý¼º ¹× ¼³Á¤
+		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ï¿½ï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
+		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		ssystem->createSound("button.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 		channel->stop();
 		ssystem->playSound(sound1, 0, false, &channel);
@@ -138,14 +138,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		Title_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP6));
 		Clear_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP13));
 		Editmap.block_count = Editmap.object_count = Editmap.enemy_count = Editmap.boss_count = 0;
-		// ¹öÆ° Å©±â¿¡ ¸Â°Ô ºñÆ®¸ÊÀ» ·ÎµåÇÕ´Ï´Ù.
+		// ï¿½ï¿½Æ° Å©ï¿½â¿¡ ï¿½Â°ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½Õ´Ï´ï¿½.
 		Start_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP7, 200, 50);
 		Exit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP8, 200, 50);
 		Edit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP12, 200, 50);
 		CreateButtons(hWnd, Start_bitmap, Exit_bitmap, Edit_bitmap);
 		GetClientRect(hWnd, &Client_rect);
 		client.my_player_id = 0;
-		// ¼­¹ö¿¡ Á¢¼ÓÇÏ±â
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½
 		client.Connect("127.0.0.1", 9000);
 		client.StartRecvThread();
 		break;
@@ -153,18 +153,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	{
 		int wmId = LOWORD(wParam);
 		switch (wmId) {
-		case 1: // °ÔÀÓ ½ÃÀÛ ¹öÆ°
+		case 1: // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°
 			channel->stop();
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
-			// ÇöÀç À©µµ¿ì¸¦ ¼û±â°í
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½
 			ShowWindow(hWnd, SW_HIDE);
 			selected_map = 0;
 			map = init_map(Desk_rect, &player, selected_map);
-			// »õ·Î¿î °ÔÀÓ À©µµ¿ì¸¦ »ý¼º
+			// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½ï¿½ï¿½ï¿½
 			CreateGameWindow(g_hinst);
 			break;
-		case 2: // °ÔÀÓ Á¾·á ¹öÆ°
+		case 2: // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ°
 			channel->stop();
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
@@ -182,7 +182,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
 			ShowWindow(hWnd, SW_HIDE);
-			// »õ·Î¿î °ÔÀÓ À©µµ¿ì¸¦ »ý¼º
+			// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½ï¿½ï¿½ï¿½
 			CreateEditWindow(g_hinst);
 			break;
 		default:
@@ -234,7 +234,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 }
 
 void CloseGameWindow(HWND hGameWnd) {
-	// °ÔÀÓ À©µµ¿ì¸¦ ´Ý°í Å¸ÀÌÆ² À©µµ¿ì¸¦ ´Ù½Ã º¸¿©ÁÜ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½Ý°ï¿½ Å¸ï¿½ï¿½Æ² ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	DestroyWindow(hGameWnd);
 	HWND hTitleWnd = FindWindow(L"WindowClass", NULL);
 	if (hTitleWnd) {
@@ -273,7 +273,7 @@ void CreateGameWindow(HINSTANCE hInstance) {
 }
 
 void CloseEditWindow(HWND hEditWnd) {
-	// °ÔÀÓ À©µµ¿ì¸¦ ´Ý°í Å¸ÀÌÆ² À©µµ¿ì¸¦ ´Ù½Ã º¸¿©ÁÜ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½Ý°ï¿½ Å¸ï¿½ï¿½Æ² ï¿½ï¿½ï¿½ï¿½ï¿½ì¸¦ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	DestroyWindow(hEditWnd);
 	HWND hTitleWnd = FindWindow(L"WindowClass", NULL);
 	if (hTitleWnd) {
@@ -326,13 +326,13 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	switch (iMsg) {
 	case WM_CREATE:
-		result = FMOD::System_Create(&ssystem); //--- »ç¿îµå ½Ã½ºÅÛ »ý¼º
+		result = FMOD::System_Create(&ssystem); //--- ï¿½ï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (result != FMOD_OK)
 			exit(0);
-		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- »ç¿îµå ½Ã½ºÅÛ ÃÊ±âÈ­
-		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1¹ø »ç¿îµå »ý¼º ¹× ¼³Á¤
-		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2¹ø »ç¿îµå »ý¼º ¹× ¼³Á¤
-		ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3¹ø »ç¿îµå »ý¼º ¹× ¼³Á¤
+		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ï¿½ï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
+		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		
 	
 		channel->stop();
@@ -418,7 +418,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			DeleteObject(BGM_bitmap);
 			DeleteObject(BGN_bitmap);
 			ssystem->release();
-			CloseGameWindow(hWnd); // Å¸ÀÌÆ² È­¸éÀ¸·Î µ¹¾Æ°¨.
+			CloseGameWindow(hWnd); // Å¸ï¿½ï¿½Æ² È­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ°ï¿½.
 			break;
 		default:
 			break;
@@ -445,10 +445,10 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 
-		//Ä³¸¯ÅÍ ±×¸®±â
+		//Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
 		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);
 
-		//¸Ê ±×¸®±â
+		//ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
 
 		BitBlt(hdc, 0,0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
@@ -481,11 +481,11 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	GetWindowRect(GetDesktopWindow(), &Desk_rect);
 	switch (idEvent)
 	{
-	case 1://ÇÃ·¹ÀÌ¾î ÀÌµ¿ ¹× Ãæµ¹
+	case 1://ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ ï¿½æµ¹
 		
 		Player_Move(&player, window_rect);
 
-		if (!IntersectRect(&temp_rt, &player.player_rt, &Desk_rect))//¸Ê ¹ÛÀ¸·Î ¶³¾îÁü
+		if (!IntersectRect(&temp_rt, &player.player_rt, &Desk_rect))//ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			player.x = map.P_Start_Loc[0].x;
 			player.y = map.P_Start_Loc[0].y;
@@ -497,22 +497,22 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 
 		if (player.player_life <= 0) {
-			CloseGameWindow(hWnd); // Å¸ÀÌÆ² È­¸éÀ¸·Î µ¹¾Æ°¨.
+			CloseGameWindow(hWnd); // Å¸ï¿½ï¿½Æ² È­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ°ï¿½.
 		}
 
-		//ºí·° Ãæµ¹ °¨Áö
+		//ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½
 		for (int i = 0; i < map.block_count; i++)
 		{
-			if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)//ÇÃ·¹ÀÌ¾î°¡ Æ¯Á¤ºí·°ÀÇ x¾È¿¡ ÀÖ´Ù¸é
+			if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)//ï¿½Ã·ï¿½ï¿½Ì¾î°¡ Æ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ xï¿½È¿ï¿½ ï¿½Ö´Ù¸ï¿½
 			{
-				if (player.y + Size > map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)//À§¿¡
+				if (player.y + Size > map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)//ï¿½ï¿½ï¿½ï¿½
 				{
 					player.y = map.blocks[i].Block_rt.top - Size;
 					player.jump_count = 2;
 					player.is_in_air = false;
 					player.DOWN = false;
 				}
-				else if (player.y - Size > map.blocks[i].y && player.y - Size < map.blocks[i].Block_rt.bottom)//¾Æ·¡
+				else if (player.y - Size > map.blocks[i].y && player.y - Size < map.blocks[i].Block_rt.bottom)//ï¿½Æ·ï¿½
 				{
 					player.y = map.blocks[i].Block_rt.bottom + Size;
 					player.is_in_air = true;
@@ -520,9 +520,9 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.UP = false;
 				}
 			}
-			else if (player.y <= map.blocks[i].Block_rt.bottom && player.y >= map.blocks[i].Block_rt.top)//ÇÃ·¹ÀÌ¾î°¡ Æ¯Á¤ºí·°ÀÇ y¾È¿¡ ÀÖ´Ù¸é
+			else if (player.y <= map.blocks[i].Block_rt.bottom && player.y >= map.blocks[i].Block_rt.top)//ï¿½Ã·ï¿½ï¿½Ì¾î°¡ Æ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ yï¿½È¿ï¿½ ï¿½Ö´Ù¸ï¿½
 			{
-				if (player.x - Size < map.blocks[i].Block_rt.right && player.x - Size > map.blocks[i].x)//¿À¸¥ÂÊ
+				if (player.x - Size < map.blocks[i].Block_rt.right && player.x - Size > map.blocks[i].x)//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				{
 					player.UP = false;
 					player.x = map.blocks[i].Block_rt.right + Size;
@@ -531,7 +531,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.is_in_air = false;
 					player.DOWN = false;
 				}
-				else if (player.x + Size > map.blocks[i].Block_rt.left && player.x + Size < map.blocks[i].x)//¿ÞÂÊ
+				else if (player.x + Size > map.blocks[i].Block_rt.left && player.x + Size < map.blocks[i].x)//ï¿½ï¿½ï¿½ï¿½
 				{
 					player.UP = false;
 					player.x = map.blocks[i].Block_rt.left - Size;
@@ -544,23 +544,23 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			
 		}
 
-		//¿ÀºêÁ§Æ® Ãæµ¹ °¨Áö
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½
 		for (int i = 0; i < map.object_count; i++)
 		{
 			if (IntersectRect(&temp_rt,&player.player_rt,&map.objects[i].Obj_rt))
 			{
 				switch (map.objects[i].obj_type)
 				{
-				case Spike://°¡½Ã Ãæµ¹
+				case Spike://ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹
 					player.x = map.P_Start_Loc[0].x;
 					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
 					window_move = true;
 
-					player.player_life--; // ¸ñ¼û °¨¼Ò
+					player.player_life--; // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 					break;
-				case Flag://°ñÀÎÁöÁ¡ Ãæµ¹
+				case Flag://ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹
 					if (selected_map == 99)
 					{
 						selected_map = 0;
@@ -581,7 +581,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			}
 		}
 
-		//Àû Ãæµ¹ °¨Áö
+		//ï¿½ï¿½ ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½
 		for (int i = 0; i < map.enemy_count; i++)
 		{
 			if (map.enemys[i].is_alive)
@@ -599,13 +599,13 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 						player.is_in_air = false;
 						window_move = true;
 
-						player.player_life--; // ¸ñ¼û °¨¼Ò
+						player.player_life--; // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 					}
 				}
 			}
 		}
 		
-		//Àû ¿òÁ÷ÀÓ
+		//ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for (int i = 0; i < map.enemy_count; i++)
 		{
 			Move_Enemy(&map.enemys[i], map.blocks[map.enemys[i].on_block], 3);
@@ -622,10 +622,10 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		}
 
 		
-		//º¸½ºÀü
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if (map.boss_count != 0)
 		{
-			if (map.boss.attack_time <= 0)//ÀÏÁ¤ ÁÖ±â¸¶´Ù ºí·° »ý¼º
+			if (map.boss.attack_time <= 0)//ï¿½ï¿½ï¿½ï¿½ ï¿½Ö±â¸¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			{
 				switch (map.boss.life)
 				{
@@ -704,21 +704,21 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.is_in_air = false;
 					window_move = true;
 
-					player.player_life--; // ¸ñ¼û °¨¼Ò
+					player.player_life--; // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 				}
 			}
 
 			for (int i = 0; i < map.block_count; i++)
 			{
-				if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)//ÇÃ·¹ÀÌ¾î°¡ Æ¯Á¤ºí·°ÀÇ x¾È¿¡ ÀÖ´Ù¸é
+				if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)//ï¿½Ã·ï¿½ï¿½Ì¾î°¡ Æ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ xï¿½È¿ï¿½ ï¿½Ö´Ù¸ï¿½
 				{
-					if (player.y + Size >= map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)//À§¿¡
+					if (player.y + Size >= map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)//ï¿½ï¿½ï¿½ï¿½
 					{
 						player.x--;
 					}
 				}
 
-				if (map.blocks[i].x <= Desk_rect.left)//ºí·°ÀÌ ¸Ê ¹ÛÀ¸·Î ³ª°¡¸é
+				if (map.blocks[i].x <= Desk_rect.left)//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				{
 					for (int j = i; j < map.block_count - 1; j++)
 					{
@@ -821,7 +821,7 @@ int search_near(int x, int y, DrawMod curDrawmod) {
 	return nearest;
 }
 
-//EditWindow ÇÔ¼ö
+//EditWindow ï¿½Ô¼ï¿½
 LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	HDC hdc, mdc, resourcedc;
 	HBITMAP hBitmap;
@@ -855,7 +855,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 	case WM_LBUTTONDOWN:
 		if (client.my_player_id != 0) break;
 
-		start_y = old_y = HIWORD(lParam);//À©µµ¿ì ±âÁß ÁÂÇ¥·Î º¯È¯
+		start_y = old_y = HIWORD(lParam);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½È¯
 		start_x = old_x = LOWORD(lParam);
 		switch (curDrawmod)
 		{
@@ -982,14 +982,13 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		if (client.my_player_id != 0) break;
 		switch (wParam)
 		{
-		case 's': case 'S': //Å×½ºÆ®
+		case 's': case 'S': //ï¿½×½ï¿½Æ®
 			map = Editmap;
 			selected_map = 99;
 			CloseEditWindow(hWnd);
 
-			// ¼­¹ö¿¡ ¸Ê Á¤º¸ Àü¼Û
+			// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 			UMP.Init(map);
-			UMP.player_start_pos[client.my_player_id] = Point(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
 			client.SendUploadMapPacket(&UMP);
 
 			CreateGameWindow(g_hinst);
@@ -1019,7 +1018,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			DeleteObject(Platforms_bitmap);
 			DeleteObject(BGM_bitmap);
 			DeleteObject(BGN_bitmap);
-			CloseEditWindow(hWnd); // Å¸ÀÌÆ² È­¸éÀ¸·Î µ¹¾Æ°¨.
+			CloseEditWindow(hWnd); // Å¸ï¿½ï¿½Æ² È­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ°ï¿½.
 			break;
 		default:
 			break;
@@ -1046,14 +1045,14 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
 		}
 
-		//Ä³¸¯ÅÍ ±×¸®±â
+		//Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
 		SelectObject(resourcedc, Tino_bitmap);
 		TransparentBlt(mdc, Editmap.P_Start_Loc[0].x - Size, Editmap.P_Start_Loc[0].y - Size, (Size * 2), (Size * 2), resourcedc, 0, 0, 150, 140, RGB(0, 0, 255));
 
-		//¸Ê ±×¸®±â
+		//ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Editmap);
 
-		//ÇöÀç ±×¸®±â ¸ðµå ±×¸®±â
+		//ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½ï¿½
 		switch (curDrawmod)
 		{
 		case D_Block:

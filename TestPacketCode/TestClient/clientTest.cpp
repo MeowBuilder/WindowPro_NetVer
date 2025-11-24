@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <winsock2.h>
@@ -57,6 +57,7 @@ int main()
 
     printf("[CLIENT] Connected to server.\n\n");
 
+    u_short my_id = (u_short)-1; // 클라이언트 ID 저장
     char buf[20000];
 
     auto RecvPacket = [&](int expectedSize)
@@ -76,6 +77,7 @@ int main()
             {
                 SC_AssignIDPacket* p = (SC_AssignIDPacket*)buf;
                 p->Decode();
+                my_id = p->player_id; // ID 저장
                 printf("--- RECV: SC_AssignIDPacket ---\n");
                 p->Log();
                 break;
@@ -180,6 +182,25 @@ int main()
         int sent = send(sock, (char*)&pkt, sizeof(pkt), 0);
         printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
     }
+
+    // 3) CS_EndSessionRequestPacket
+    {
+        if (my_id != (u_short)-1)
+        {
+            CS_EndSessionRequestPacket pkt(my_id);
+            printf("\n--- SEND: CS_EndSessionRequestPacket (before Encode) ---\n");
+            pkt.Log();
+
+            pkt.Encode();
+            int sent = send(sock, (char*)&pkt, sizeof(pkt), 0);
+            printf("[CLIENT] Sent CS_EndSessionRequestPacket: %d bytes\n", sent);
+        }
+        else
+        {
+            printf("\n[CLIENT] Cannot send CS_EndSessionRequestPacket: No ID assigned.\n");
+        }
+    }
+
 
     printf("\n[CLIENT] All CS packets sent. Closing.\n");
 

@@ -29,6 +29,7 @@ public:
     // 패킷 처리
     void HandleMapUpload(CS_UploadMapPacket* packet, int client_id);
     void HandleStartSessionRequest(int client_id);  // map_number 제거된 버전
+    void HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, int client_id);
 
     bool SendMapUploadResponsePacket(int client_id, bool is_success);
     bool SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet);

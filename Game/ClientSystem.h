@@ -18,6 +18,7 @@ public:
 
     void SendUploadMapPacket(CS_UploadMapPacket* packet);
     void SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet);
+    bool SendEndSessionRequestPacket();
 
     // 게임 상태
     u_short my_player_id;
