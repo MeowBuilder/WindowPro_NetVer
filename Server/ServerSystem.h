@@ -10,6 +10,8 @@
 
 #include "Packets.h"        // 모든 패킷 구조체 정의
 #include "GameManager.h"    // Map, Player 구조체 및 게임 로직 함수
+#include "PlayerEnemy.h"    // 플레이어/적 이동 & 충돌 계산을 담당하는 핵심 로직
+
 
 #pragma comment(lib, "ws2_32.lib")
 
