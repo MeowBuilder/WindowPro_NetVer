@@ -340,6 +340,61 @@ public:
     }
 };
 
+// [C->S] 클라이언트의 상태(위치, 애니메이션)를 서버로 전송하는 패킷
+class CS_PlayerUpdatePacket : public BasePacket {
+public:
+    u_short player_id;
+    Point pos;
+    int walk_state;
+    int jump_state;
+    Direction dir;
+
+    CS_PlayerUpdatePacket() {
+        size = sizeof(CS_PlayerUpdatePacket);
+        type = CS_PLAYER_UPDATE;
+        player_id = (u_short)-1;
+        pos = { 0, 0 };
+        walk_state = 0;
+        jump_state = 0;
+        dir = (Direction)0;
+    }
+
+    CS_PlayerUpdatePacket(u_short id, Player* player) {
+        size = sizeof(CS_PlayerUpdatePacket);
+        type = CS_PLAYER_UPDATE;
+        player_id = id;
+        pos = { player->x, player->y };
+        //walk_state = player->walk;
+        //jump_state = player->jump_state;
+        //dir = player->direction;
+    }
+
+    void Encode() {
+        size = htons(size);
+        player_id = htons(player_id);
+        pos.x = htonl(pos.x);
+        pos.y = htonl(pos.y);
+        walk_state = htonl(walk_state);
+        jump_state = htonl(jump_state);
+        dir = (Direction)htonl((int)dir);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        player_id = ntohs(player_id);
+        pos.x = ntohl(pos.x);
+        pos.y = ntohl(pos.y);
+        walk_state = ntohl(walk_state);
+        jump_state = ntohl(jump_state);
+        dir = (Direction)ntohl((int)dir);
+    }
+
+    void Log() const {
+        printf("[CS_PlayerUpdatePacket] Type: %d, Size: %hu, ID: %hu, Pos: (%d, %d), Walk: %d, Jump: %d, Dir: %d\n",
+            type, size, player_id, pos.x, pos.y, walk_state, jump_state, (int)dir);
+    }
+};
+
 // [S->C] 확정된 게임 맵 정보를 모든 클라이언트에게 전송하는 패킷
 class SC_MapInfoPacket : public BasePacket {
 public:

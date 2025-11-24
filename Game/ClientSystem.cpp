@@ -6,9 +6,11 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("[Error] WSAStartup() failed\n");
     }
+    InitializeCriticalSection(&m_map_cs);
 }
 
 ClientSystem::~ClientSystem() {
+    DeleteCriticalSection(&m_map_cs);
     Disconnect();
     WSACleanup();
 }
@@ -141,23 +143,50 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
     }
 }
 
-Map ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
+void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 {
-    return packet->mapInfo;
+    EnterCriticalSection(&m_map_cs);
+    m_map = packet->mapInfo;
+    LeaveCriticalSection(&m_map_cs);
+}
+
+Map ClientSystem::GetMap()
+{
+    Map temp_map;
+    EnterCriticalSection(&m_map_cs);
+    temp_map = m_map;
+    LeaveCriticalSection(&m_map_cs);
+    return temp_map;
 }
 
 void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)
 {
     packet->Encode();
     int sent = send(sock, (char*)packet, sizeof(CS_UploadMapPacket), 0);
-    printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
+    printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(CS_UploadMapPacket));
 }
 
 void ClientSystem::SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet)
 {
     packet->Encode();
     int sent = send(sock, (char*)packet, sizeof(CS_StartSessionRequestPacket), 0);
-    printf("[CLIENT] Sent CS_UploadMapPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(packet));
+    printf("[CLIENT] Sent CS_StartSessionRequestPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(CS_StartSessionRequestPacket));
+}
+
+bool ClientSystem::SendPlayerUpdatePacket(Player* player)
+{
+    if (sock == INVALID_SOCKET) {
+        return false;
+    }
+    CS_PlayerUpdatePacket packet(my_player_id, player);
+    packet.Encode();
+
+    int sent_bytes = send(sock, (char*)&packet, sizeof(CS_PlayerUpdatePacket), 0);
+    if (sent_bytes == SOCKET_ERROR) {
+        printf("[Error] send() CS_PlayerUpdatePacket failed: %d\n", WSAGetLastError());
+        return false;
+    }
+    return true;
 }
 
 bool ClientSystem::SendEndSessionRequestPacket() {

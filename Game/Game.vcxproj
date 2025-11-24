@@ -103,12 +103,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\WindowPro_NetVer\Game\inc;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\WindowPro_NetVer\Game\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\WindowPro_NetVer\Game\inc;$(IncludePath);C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\inc</IncludePath>
+    <LibraryPath>C:\WindowPro_NetVer\Game\lib;$(LibraryPath);C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\user\Documents\GitHub\WindowPro_NetVer\Game\inc;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\user\Documents\GitHub\WindowPro_NetVer\Game\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\user\Documents\GitHub\WindowPro_NetVer\Game\inc;$(IncludePath);C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\inc</IncludePath>
+    <LibraryPath>C:\Users\user\Documents\GitHub\WindowPro_NetVer\Game\lib;$(LibraryPath);C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\lib</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);;C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\inc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\lib</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);;C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\inc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);C:\Users\tta12\Downloads\2025-2\넷겜플\WindowPro_NetVer\Game\lib</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

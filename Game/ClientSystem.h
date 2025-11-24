@@ -18,7 +18,9 @@ public:
 
     void SendUploadMapPacket(CS_UploadMapPacket* packet);
     void SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet);
+    bool SendPlayerUpdatePacket(Player* player);
     bool SendEndSessionRequestPacket();
+    Map GetMap();
 
     // 게임 상태
     u_short my_player_id;
@@ -27,6 +29,8 @@ private:
     SOCKET sock;
     HANDLE hRecvThread;
     char recv_buffer[4096];
+    Map m_map;
+    CRITICAL_SECTION m_map_cs;
 
 
     // 패킷 처리
@@ -34,7 +38,7 @@ private:
     void ProcessPacket(char* packet);
     void HandleAssignID(SC_AssignIDPacket* packet);
     void HandleEvent(SC_EventPacket* packet);
-    Map HandleMapInfo(SC_MapInfoPacket* packet);
+    void HandleMapInfo(SC_MapInfoPacket* packet);
 
     // 스레드 함수
     static DWORD WINAPI ClientRecvThread(LPVOID lpParam);
