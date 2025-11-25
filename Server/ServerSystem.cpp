@@ -261,13 +261,8 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
 {
     Player& p = server_players[client_id];
 
-    p.x = packet->x;
-    p.y = packet->y;
-    p.LEFT = packet->LEFT;
-    p.RIGHT = packet->RIGHT;
-    p.UP = packet->UP;
-    p.DOWN = packet->DOWN;
-
+    p.x = packet->pos.x;
+    p.y = packet->pos.y;
     // 충돌 체크에 필요한 사각형 갱신
     p.player_rt = { p.x - Size, p.y - Size, p.x + Size, p.y + Size };
 }
@@ -342,7 +337,8 @@ void ServerSystem::CheckAllCollisions()
 
         for (int o = 0; o < server_map.object_count; o++)
         {
-            if (IntersectRect(NULL, &p.player_rt, &server_map.objects[o].Obj_rt))
+            RECT dummy;
+            if (IntersectRect(&dummy, &p.player_rt, &server_map.objects[o].Obj_rt))
             {
                 if (server_map.objects[o].obj_type == Spike)
                     p.player_life--;
