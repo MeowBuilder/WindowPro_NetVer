@@ -79,7 +79,8 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
     g_hinst = hInstance;
 	Clear = false;
 	selected_map = 0;
-	GetWindowRect(GetDesktopWindow(), &Desk_rect);
+	Desk_rect = { 0,0,1920,1080 }; // 여기 바꾸면 맵 전체 사이즈 변경
+	//GetWindowRect(GetDesktopWindow(), &Desk_rect);
 
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -98,8 +99,10 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
         MessageBox(nullptr, L"������ ��� ����", L"����", MB_OK);
         return 1;
     }
+
+
 	
-	HWND hWnd = CreateWindow(L"WindowClass", L"Ÿ��Ʋ ȭ��", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
+	HWND hWnd = CreateWindow(L"WindowClass", L"WindowPro", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
         MessageBox(nullptr, L"������ ���� ����", L"����", MB_OK);
@@ -120,6 +123,7 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
+	CS_StartSessionRequestPacket SSRP;
 	static HBITMAP Title_bitmap, Clear_bitmap, Start_bitmap, Exit_bitmap, Edit_bitmap;
 	static RECT Client_rect;
     switch (message) {
@@ -138,14 +142,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		Title_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP6));
 		Clear_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP13));
 		Editmap.block_count = Editmap.object_count = Editmap.enemy_count = Editmap.boss_count = 0;
-		// ��ư ũ�⿡ �°� ��Ʈ���� �ε��մϴ�.
+
 		Start_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP7, 200, 50);
 		Exit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP8, 200, 50);
 		Edit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP12, 200, 50);
 		CreateButtons(hWnd, Start_bitmap, Exit_bitmap, Edit_bitmap);
 		GetClientRect(hWnd, &Client_rect);
 		client.my_player_id = 0;
-		// ������ �����ϱ�
+
 		client.Connect("127.0.0.1", 9000);
 		client.StartRecvThread();
 		break;
@@ -153,15 +157,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	{
 		int wmId = LOWORD(wParam);
 		switch (wmId) {
-		case 1: // ���� ���� ��ư
+		case 1:
 			channel->stop();
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
-			// ���� �����츦 �����
+
 			ShowWindow(hWnd, SW_HIDE);
+
+			client.SendStartSessionRequestPacket(&SSRP);
+
 			selected_map = 0;
-			map = init_map(Desk_rect, &player, selected_map);
-			// ���ο� ���� �����츦 ����
+			//map = init_map(Desk_rect, &player, selected_map);
+			map = client.GetMap();
+			player = Make_Player(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
+
 			CreateGameWindow(g_hinst);
 			break;
 		case 2: // ���� ���� ��ư
@@ -418,7 +427,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			DeleteObject(BGM_bitmap);
 			DeleteObject(BGN_bitmap);
 			ssystem->release();
-			CloseGameWindow(hWnd); // Ÿ��Ʋ ȭ������ ���ư�.
+			CloseGameWindow(hWnd);
 			break;
 		default:
 			break;
@@ -478,7 +487,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
-	GetWindowRect(GetDesktopWindow(), &Desk_rect);
+	//GetWindowRect(GetDesktopWindow(), &Desk_rect);
+	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
 	{
 	case 1://�÷��̾� �̵� �� �浹
@@ -614,7 +624,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 		if (window_move)
 		{
-			MoveWindow(hWnd, player.x - (wnd_rt.right / 2), player.y - (wnd_rt.bottom / 2), 320, 320, true);
+			MoveWindow(hWnd, std::clamp(player.x - (wnd_rt.right / 2),(long)0, (long)Desk_rect.right - (wnd_rt.right)), player.y - (wnd_rt.bottom / 2), 320, 320, true);
 		}
 		else
 		{
@@ -718,7 +728,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					}
 				}
 
-				if (map.blocks[i].x <= Desk_rect.left)//������ �� ������ ������
+				if (map.blocks[i].x <= Desk_rect.left)
 				{
 					for (int j = i; j < map.block_count - 1; j++)
 					{
@@ -821,7 +831,6 @@ int search_near(int x, int y, DrawMod curDrawmod) {
 	return nearest;
 }
 
-//EditWindow �Լ�
 LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam) {
 	HDC hdc, mdc, resourcedc;
 	HBITMAP hBitmap;
@@ -855,7 +864,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 	case WM_LBUTTONDOWN:
 		if (client.my_player_id != 0) break;
 
-		start_y = old_y = HIWORD(lParam);//������ ���� ��ǥ�� ��ȯ
+		start_y = old_y = HIWORD(lParam);
 		start_x = old_x = LOWORD(lParam);
 		switch (curDrawmod)
 		{

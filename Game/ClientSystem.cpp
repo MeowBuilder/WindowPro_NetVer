@@ -7,6 +7,7 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
         printf("[Error] WSAStartup() failed\n");
     }
     InitializeCriticalSection(&m_map_cs);
+    maprecvEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 ClientSystem::~ClientSystem() {
@@ -146,16 +147,24 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
 void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 {
     EnterCriticalSection(&m_map_cs);
+
     m_map = packet->mapInfo;
+
     LeaveCriticalSection(&m_map_cs);
+
+    SetEvent(maprecvEvent);
 }
 
 Map ClientSystem::GetMap()
 {
     Map temp_map;
+
+    WaitForSingleObject(maprecvEvent, INFINITE);
+
     EnterCriticalSection(&m_map_cs);
     temp_map = m_map;
     LeaveCriticalSection(&m_map_cs);
+
     return temp_map;
 }
 

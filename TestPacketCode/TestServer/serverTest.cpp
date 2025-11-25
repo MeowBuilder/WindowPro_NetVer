@@ -85,7 +85,7 @@ int main()
 
     // 1) SC_AssignIDPacket
     {
-        SC_AssignIDPacket pkt(1);
+        SC_AssignIDPacket pkt(0);
         printf("\n--- TEST: SC_AssignIDPacket (before Encode) ---\n");
         pkt.Log(); // host byte order
 
@@ -94,163 +94,76 @@ int main()
         printf("[SERVER] Sent SC_AssignIDPacket: %d bytes\n", sent);
     }
 
-    // 2) SC_MapUploadResponsePacket
-    {
-        SC_MapUploadResponsePacket pkt(true);
-        printf("\n--- TEST: SC_MapUploadResponsePacket (before Encode) ---\n");
-        pkt.Log();
+    SC_MapInfoPacket pkt;
+    Map& new_map = pkt.mapInfo;
+	int randomnum;
+	new_map.block_count = new_map.object_count = new_map.enemy_count = new_map.boss_count = 0;
+    //맵 초기화 및 생성
+    
+    RECT Desk_rect = { 0,0,1920,1080 };
+	//맵 블럭 초기화
+	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+	new_map.block_count++;
 
-        pkt.Encode();
-        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-        printf("[SERVER] Sent SC_MapUploadResponsePacket: %d bytes\n", sent);
-    }
+	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+	new_map.block_count++;
 
-    // 3) SC_MapInfoPacket (  ä)
-    {
-        SC_MapInfoPacket pkt;
-        Map& testMap = pkt.mapInfo; // Get a reference for easier access
+	for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
+	{
+		randomnum = rand() % 2;
+		if (randomnum == 0)
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 192;
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+		}
+		else
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+		}
+	}
 
-        testMap.block_count = 2;
-        testMap.blocks[0].x = 100;
-        testMap.blocks[0].y = 200;
-        testMap.blocks[0].Block_rt = { 0, 0, 32, 32 };
+	//맵 오브젝트 초기화
+	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Spike;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
 
-        testMap.blocks[1].x = 300;
-        testMap.blocks[1].y = 400;
-        testMap.blocks[1].Block_rt = { 32, 32, 64, 64 };
+	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+	{
+		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
+	}
 
-        testMap.object_count = 1;
-        testMap.objects[0].x = 500;
-        testMap.objects[0].y = 600;
-        testMap.objects[0].obj_type = Spike;
-        testMap.objects[0].Obj_rt = { 0, 0, 16, 16 };
+	new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + 48;
+	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Flag;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
 
-        testMap.enemy_count = 1;
-        testMap.enemys[0].x = 700;
-        testMap.enemys[0].y = 800;
+	//플레이어 생성
+	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
 
-        testMap.P_Start_Loc[0].x = 10;
-        testMap.P_Start_Loc[0].y = 20;
 
-        printf("\n--- TEST: SC_MapInfoPacket (before Encode) ---\n");
-        pkt.Log();
+    printf("\n--- TEST: SC_MapInfoPacket (before Encode) ---\n");
+    pkt.Log();
 
-        pkt.Encode();
-        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-        printf("[SERVER] Sent SC_MapInfoPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
-    }
-
-    // 4) SC_GameStatePacket ( )
-    {
-        SC_GameStatePacket pkt;
-        pkt.players[0].is_connected = true;
-        pkt.players[0].pos.x = 300;
-        pkt.players[0].pos.y = 150;
-        pkt.players[0].life = 99;
-        pkt.players[0].walk_state = 1;
-        pkt.players[0].jump_state = 0;
-        pkt.players[0].frame_counter = 10;
-        pkt.players[0].dir = Direction::RIGHT;
-
-        pkt.enemies[0].is_alive = true;
-        pkt.enemies[0].pos.x = 1000;
-        pkt.enemies[0].pos.y = 2000;
-        pkt.enemies[0].dir = Direction::LEFT;
-        pkt.enemies[0].move_state = 2;
-
-        pkt.boss.is_active = true;
-        pkt.boss.pos.x = 5000;
-        pkt.boss.pos.y = 6000;
-        pkt.boss.life = 123;
-        pkt.boss.attack_time = 42;
-        pkt.boss.dir = Direction::RIGHT;
-
-        printf("\n--- TEST: SC_GameStatePacket (before Encode) ---\n");
-        pkt.Log();
-
-        pkt.Encode();
-        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-        printf("[SERVER] Sent SC_GameStatePacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
-    }
-
-    // 5) SC_EventPacket (STAGE_CLEAR)
-    {
-        SC_EventPacket pkt(STAGE_CLEAR);
-        printf("\n--- TEST: SC_EventPacket (STAGE_CLEAR) (before Encode) ---\n");
-        pkt.Log();
-
-        pkt.Encode();
-        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-        printf("[SERVER] Sent SC_EventPacket: %d bytes\n", sent);
-    }
-
-    // 6) SC_EventPacket (GAME_WIN)
-    {
-        SC_EventPacket pkt(GAME_WIN);
-        printf("\n--- TEST: SC_EventPacket (GAME_WIN) (before Encode) ---\n");
-        pkt.Log();
-
-        pkt.Encode();
-        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-        printf("[SERVER] Sent SC_EventPacket: %d bytes\n", sent);
-    }
-
-    // -------------------------------
-    // C -> S :  CS_* Ŷ 
-    // -------------------------------
-
-    char buf[20000]; //  ū Ŷ ˳
-
-    // 1) CS_StartSessionRequestPacket 
-    {
-        int expected = sizeof(CS_StartSessionRequestPacket);
-        int ret = RecvAll(client, buf, expected);
-        if (ret != expected)
-        {
-            printf("[SERVER] Recv CS_StartSessionRequestPacket failed: %d / %d\n", ret, expected);
-        }
-        else
-        {
-            CS_StartSessionRequestPacket* p = (CS_StartSessionRequestPacket*)buf;
-            p->Decode();
-            printf("\n--- RECV: CS_StartSessionRequestPacket ---\n");
-            p->Log();
-        }
-    }
-
-    // 2) CS_UploadMapPacket 
-    {
-        int expected = sizeof(CS_UploadMapPacket);
-        int ret = RecvAll(client, buf, expected);
-        if (ret != expected)
-        {
-            printf("[SERVER] Recv CS_UploadMapPacket failed: %d / %d\n", ret, expected);
-        }
-        else
-        {
-            CS_UploadMapPacket* p = (CS_UploadMapPacket*)buf;
-            p->Decode();
-            printf("\n--- RECV: CS_UploadMapPacket ---\n");
-            p->Log();
-        }
-    }
-
-    // 3) CS_EndSessionRequestPacket 
-    {
-        int expected = sizeof(CS_EndSessionRequestPacket);
-        int ret = RecvAll(client, buf, expected);
-        if (ret != expected)
-        {
-            printf("[SERVER] Recv CS_EndSessionRequestPacket failed: %d / %d\n", ret, expected);
-        }
-        else
-        {
-            CS_EndSessionRequestPacket* p = (CS_EndSessionRequestPacket*)buf;
-            p->Decode();
-            printf("\n--- RECV: CS_EndSessionRequestPacket ---\n");
-            p->Log();
-        }
-    }
+    pkt.Encode();
+    int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
+    printf("[SERVER] Sent SC_MapInfoPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
 
     printf("\n[SERVER] Test sequence done. Closing.\n");
 

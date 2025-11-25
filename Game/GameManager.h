@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <algorithm>
 #include "resource.h"
 #define Size 24
 

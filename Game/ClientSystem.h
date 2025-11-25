@@ -28,10 +28,11 @@ private:
     // 네트워크
     SOCKET sock;
     HANDLE hRecvThread;
-    char recv_buffer[4096];
+    char recv_buffer[12000];
     Map m_map;
     CRITICAL_SECTION m_map_cs;
 
+    HANDLE maprecvEvent;
 
     // 패킷 처리
     bool DoRecv();
