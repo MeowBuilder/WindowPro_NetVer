@@ -12,7 +12,7 @@
 
 #define SERVER_PORT 9000
 
-int RecvAll(SOCKET sock, char* buf, int len)
+int Recv(SOCKET sock, char* buf, int len)
 {
     int received = 0;
     while (received < len)
@@ -204,7 +204,7 @@ int main()
     // 1) CS_StartSessionRequestPacket 
     {
         int expected = sizeof(CS_StartSessionRequestPacket);
-        int ret = RecvAll(client, buf, expected);
+        int ret = Recv(client, buf, expected);
         if (ret != expected)
         {
             printf("[SERVER] Recv CS_StartSessionRequestPacket failed: %d / %d\n", ret, expected);
@@ -221,7 +221,7 @@ int main()
     // 2) CS_UploadMapPacket 
     {
         int expected = sizeof(CS_UploadMapPacket);
-        int ret = RecvAll(client, buf, expected);
+        int ret = Recv(client, buf, expected);
         if (ret != expected)
         {
             printf("[SERVER] Recv CS_UploadMapPacket failed: %d / %d\n", ret, expected);
@@ -238,7 +238,7 @@ int main()
     // 3) CS_EndSessionRequestPacket 
     {
         int expected = sizeof(CS_EndSessionRequestPacket);
-        int ret = RecvAll(client, buf, expected);
+        int ret = Recv(client, buf, expected);
         if (ret != expected)
         {
             printf("[SERVER] Recv CS_EndSessionRequestPacket failed: %d / %d\n", ret, expected);
