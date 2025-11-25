@@ -138,13 +138,14 @@ int main()
 
     // 1) CS_StartSessionRequestPacket
     {
-        CS_StartSessionRequestPacket pkt;
+        CS_StartSessionRequestPacket pkt(99);
         printf("\n--- SEND: CS_StartSessionRequestPacket (before Encode) ---\n");
         pkt.Log();
 
         pkt.Encode();
         int sent = send(sock, (char*)&pkt, sizeof(pkt), 0);
         printf("[CLIENT] Sent CS_StartSessionRequestPacket: %d bytes\n", sent);
+        pkt.Log();
     }
 
     // 2) CS_UploadMapPacket ()

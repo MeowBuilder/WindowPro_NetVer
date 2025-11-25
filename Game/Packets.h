@@ -1,4 +1,4 @@
-﻿#ifndef PACKETS_H
+#ifndef PACKETS_H
 #define PACKETS_H
 
 #pragma once
@@ -293,18 +293,28 @@ public:
 // [C->S] 게임 세션 시작을 서버에 요청하는 패킷
 class CS_StartSessionRequestPacket : public BasePacket {
 public:
-    CS_StartSessionRequestPacket() {
+    // 현재 세션에서 사용하는 맵이 기본 맵(0)인지 에딧 맵(99)인지 구분 
+    // 현재 세션의 맵 종류에 따라서 클라이언트가 map_type을 다르게 저장해서 서버로 전송한다.
+    // 서버에서 0을 받으면 자신이 가진 기본 맵 정보로 맵을 채운 후에 클라이언트로 전송
+    // 99인 경우에는 ->
+    // 클라이언트 - 에딧 맵 정보를 채우고 CS_UploadMapPacket 를 전송한 후에 서버에서 보내는 SC_MapInfoPacket 패킷을 받아서 최종 맵 상태를 저장
+    // 서버      - 클라가 보낸 맵 정보대로 채운 후에 SC_MapInfoPacket 를 모든 클라에 전송한다.
+    u_short map_type;
+    CS_StartSessionRequestPacket(u_short maptype) {
         size = sizeof(CS_StartSessionRequestPacket);
         type = CS_START_SESSION_REQ;
+        map_type = maptype;
     }
     void Encode() {
         size = htons(size);
+        map_type = htons(map_type);
     }
     void Decode() {
         size = ntohs(size);
+        map_type = ntohs(map_type);
     }
     void Log() const {
-        printf("[CS_StartSessionRequestPacket] Type: %d, Size: %hu\n", type, size);
+        printf("[CS_StartSessionRequestPacket] Type: %d, Size: %hu, Map Type: %hu\n", type, size, map_type);
     }
 };
 
@@ -359,14 +369,17 @@ public:
         dir = (Direction)0;
     }
 
-    CS_PlayerUpdatePacket(u_short id, Player* player) {
+    CS_PlayerUpdatePacket(u_short id, Player* player)
+    {
         size = sizeof(CS_PlayerUpdatePacket);
         type = CS_PLAYER_UPDATE;
         player_id = id;
+
         pos = { player->x, player->y };
-        //walk_state = player->walk;
-        //jump_state = player->jump_state;
-        //dir = player->direction;
+
+        walk_state = 0;
+        jump_state = 0;
+        dir = (Direction)0;
     }
 
     void Encode() {

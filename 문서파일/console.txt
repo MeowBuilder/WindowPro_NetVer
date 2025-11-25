@@ -1,0 +1,14 @@
+void ShowDebugConsole()
+{
+    // 새 콘솔을 할당합니다.
+    AllocConsole();
+
+    // 할당된 콘솔에 표준 출력(stdout)을 연결합니다.
+    // printf, std::cout 등을 사용하려면 이 과정이 필요합니다.
+    FILE* p_file;
+    freopen_s(&p_file, "CONOUT$", "wt", stdout);
+
+    // 표준 입력(stdin)과 표준 오류(stderr)도 연결할 수 있습니다.
+    // freopen_s(&p_file, "CONIN$", "rt", stdin);
+    // freopen_s(&p_file, "CONERR$", "wt", stderr);
+}
