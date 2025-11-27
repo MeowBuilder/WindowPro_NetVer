@@ -8,109 +8,109 @@
 #include <thread>
 #include <cstdio>
 
-#include "Packets.h"        // ëª¨ë“  íŒ¨í‚· êµ¬ì¡°ì²´ ì •ì˜
-#include "GameManager.h"    // Map, Player êµ¬ì¡°ì²´ ë° ê²Œì„ ë¡œì§ í•¨ìˆ˜
-#include "PlayerEnemy.h"    // í”Œë ˆì´ì–´/ì  ì´ë™ & ì¶©ëŒ ê³„ì‚°ì„ ë‹´ë‹¹í•˜ëŠ” í•µì‹¬ ë¡œì§
+#include "Packets.h"        // ¸ğµç ÆĞÅ¶ ±¸Á¶Ã¼ Á¤ÀÇ
+#include "GameManager.h"    // Map, Player ±¸Á¶Ã¼ ¹× °ÔÀÓ ·ÎÁ÷ ÇÔ¼ö
+#include "Player&Enemy.h"    // ÇÃ·¹ÀÌ¾î/Àû ÀÌµ¿ & Ãæµ¹ °è»êÀ» ´ã´çÇÏ´Â ÇÙ½É ·ÎÁ÷
 
 
 #pragma comment(lib, "ws2_32.lib")
 
-// ì„œë²„ì— í—ˆìš©ë˜ëŠ” ìµœëŒ€ í”Œë ˆì´ì–´ ìˆ˜
+// ¼­¹ö¿¡ Çã¿ëµÇ´Â ÃÖ´ë ÇÃ·¹ÀÌ¾î ¼ö
 #define MAX_PLAYERS 3
 
-//  ServerSystem í´ë˜ìŠ¤ ì„ ì–¸ë¶€
-//  - ì„œë²„ ì „ì²´ ë„¤íŠ¸ì›Œí¬ + ê²Œì„ ë¡œì§ ê´€ë¦¬
-//  - í´ë¼ ì—°ê²° / íŒ¨í‚· ì²˜ë¦¬ / ê²Œì„ ë£¨í”„ í¬í•¨
+//  ServerSystem Å¬·¡½º ¼±¾ğºÎ
+//  - ¼­¹ö ÀüÃ¼ ³×Æ®¿öÅ© + °ÔÀÓ ·ÎÁ÷ °ü¸®
+//  - Å¬¶ó ¿¬°á / ÆĞÅ¶ Ã³¸® / °ÔÀÓ ·çÇÁ Æ÷ÇÔ
 class ServerSystem
 {
 public:
 
-    // ìƒì„±ì / ì†Œë©¸ì
-    // - Winsock ì´ˆê¸°í™”
-    // - ì†Œì¼“ ì´ˆê¸°í™”
+    // »ı¼ºÀÚ / ¼Ò¸êÀÚ
+    // - Winsock ÃÊ±âÈ­
+    // - ¼ÒÄÏ ÃÊ±âÈ­
     ServerSystem();
     ~ServerSystem();
 
 
-    // ì„œë²„ ì‹¤í–‰
-    // ì„œë²„ ì‹œì‘ (í¬íŠ¸ ë°”ì¸ë“œ + ë¦¬ìŠ¨)
+    // ¼­¹ö ½ÇÇà
+    // ¼­¹ö ½ÃÀÛ (Æ÷Æ® ¹ÙÀÎµå + ¸®½¼)
     bool Start(u_short port);
 
-    // ìƒˆ í´ë¼ì´ì–¸íŠ¸ ì ‘ì† ëŒ€ê¸° ë° ìˆ˜ë½
+    // »õ Å¬¶óÀÌ¾ğÆ® Á¢¼Ó ´ë±â ¹× ¼ö¶ô
     bool AcceptClient();
 
-    // íŠ¹ì • í´ë¼ì´ì–¸íŠ¸ë¡œë¶€í„° recv()
+    // Æ¯Á¤ Å¬¶óÀÌ¾ğÆ®·ÎºÎÅÍ recv()
     bool DoRecv(int client_id);
 
-    // recvëœ íŒ¨í‚· ë¶„ê¸° ì²˜ë¦¬
+    // recvµÈ ÆĞÅ¶ ºĞ±â Ã³¸®
     void ProcessPacket(char* packet, int client_id);
 
 
 
-    // íŒ¨í‚· ì²˜ë¦¬ í•¨ìˆ˜ë“¤
-    // í´ë¼ì´ì–¸íŠ¸ê°€ ì œì‘í•œ Map ì—…ë¡œë“œ íŒ¨í‚· ì²˜ë¦¬
+    // ÆĞÅ¶ Ã³¸® ÇÔ¼öµé
+    // Å¬¶óÀÌ¾ğÆ®°¡ Á¦ÀÛÇÑ Map ¾÷·Îµå ÆĞÅ¶ Ã³¸®
     void HandleMapUpload(CS_UploadMapPacket* packet, int client_id);
 
-    // ê¸°ë³¸ ë§µì„ ì‚¬ìš©í•´ ê²Œì„ ì„¸ì…˜ ì‹œì‘ ìš”ì²­ ì²˜ë¦¬
+    // ±âº» ¸ÊÀ» »ç¿ëÇØ °ÔÀÓ ¼¼¼Ç ½ÃÀÛ ¿äÃ» Ã³¸®
     void HandleStartSessionRequest(int client_id);
 
-    // í´ë¼ì´ì–¸íŠ¸ê°€ "ê²Œì„ ë" ìš”ì²­ ë³´ë‚¼ ë•Œ ì²˜ë¦¬
+    // Å¬¶óÀÌ¾ğÆ®°¡ "°ÔÀÓ ³¡" ¿äÃ» º¸³¾ ¶§ Ã³¸®
     void HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, int client_id);
 
-    // í´ë¼ì´ì–¸íŠ¸ì˜ PlayerUpdate íŒ¨í‚· ì²˜ë¦¬ (ì„œë²„ authoritative update)
+    // Å¬¶óÀÌ¾ğÆ®ÀÇ PlayerUpdate ÆĞÅ¶ Ã³¸® (¼­¹ö authoritative update)
     void HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_id);
 
 
-    // íŒ¨í‚· ì†¡ì‹  í•¨ìˆ˜ë“¤
-    // ì—…ë¡œë“œ ì„±ê³µ/ì‹¤íŒ¨ ì‘ë‹µ ë³´ë‚´ê¸°
+    // ÆĞÅ¶ ¼Û½Å ÇÔ¼öµé
+    // ¾÷·Îµå ¼º°ø/½ÇÆĞ ÀÀ´ä º¸³»±â
     bool SendMapUploadResponsePacket(int client_id, bool is_success);
 
-    // ë§µ ì •ë³´(Map ì „ì²´)ë¥¼ íŠ¹ì • í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ì „ì†¡
+    // ¸Ê Á¤º¸(Map ÀüÃ¼)¸¦ Æ¯Á¤ Å¬¶óÀÌ¾ğÆ®¿¡°Ô Àü¼Û
     bool SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet);
 
-    // í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ê³ ìœ  ID(0~2) ë¶€ì—¬
+    // Å¬¶óÀÌ¾ğÆ®¿¡°Ô °íÀ¯ ID(0~2) ºÎ¿©
     bool SendAssignIDPacket(int client_id, u_short id);
 
-    // ì´ë²¤íŠ¸ íŒ¨í‚· ì „ì†¡ (ìŠ¤í…Œì´ì§€ í´ë¦¬ì–´ ë“±)
+    // ÀÌº¥Æ® ÆĞÅ¶ Àü¼Û (½ºÅ×ÀÌÁö Å¬¸®¾î µî)
     bool SendEventPacket(int client_id, E_EventType event_type);
 
 
 
 private:
 
-    SOCKET m_listen;                     // ì„œë²„ ë¦¬ìŠ¨ ì†Œì¼“
-    SOCKET m_clients[MAX_PLAYERS];       // ì ‘ì† ì¤‘ì¸ ê° í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ ë°°ì—´
+    SOCKET m_listen;                     // ¼­¹ö ¸®½¼ ¼ÒÄÏ
+    SOCKET m_clients[MAX_PLAYERS];       // Á¢¼Ó ÁßÀÎ °¢ Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏ ¹è¿­
 
-    CRITICAL_SECTION m_cs;               // ì†Œì¼“ ë°°ì—´ ë³´í˜¸ìš© ì„ê³„ì˜ì—­ (ë©€í‹°ìŠ¤ë ˆë“œ-safe)
-
-
+    CRITICAL_SECTION m_cs;               // ¼ÒÄÏ ¹è¿­ º¸È£¿ë ÀÓ°è¿µ¿ª (¸ÖÆ¼½º·¹µå-safe)
 
 
-    // í´ë¼ì´ì–¸íŠ¸ë³„ Recv ìŠ¤ë ˆë“œ ìƒì„±
+
+
+    // Å¬¶óÀÌ¾ğÆ®º° Recv ½º·¹µå »ı¼º
     void StartRecvThread(int client_id);
 
-    // ëª¨ë“  í´ë¼ì—ê²Œ ë§µ ì •ë³´ ì „ì†¡
+    // ¸ğµç Å¬¶ó¿¡°Ô ¸Ê Á¤º¸ Àü¼Û
     void BroadcastMapInfo();
 
 
 
-    // ê²Œì„ ë°ì´í„°
-    Player server_players[MAX_PLAYERS];  // ì„œë²„ authoritative í”Œë ˆì´ì–´ ìƒíƒœ
-    Map    server_map;                   // í˜„ì¬ ê²Œì„ ë§µ ìƒíƒœ
+    // °ÔÀÓ µ¥ÀÌÅÍ
+    Player server_players[MAX_PLAYERS];  // ¼­¹ö authoritative ÇÃ·¹ÀÌ¾î »óÅÂ
+    Map    server_map;                   // ÇöÀç °ÔÀÓ ¸Ê »óÅÂ
 
 
-    // ê¸°ë³¸ë§µ ë¡œë”©
+    // ±âº»¸Ê ·Îµù
     void LoadDefaultMap(int map_num);
 
 
 
-    // ì„œë²„ ì£¼ìš” ê²Œì„ ë£¨í”„
-    void StartGameLoop();                // ê²Œì„ ë£¨í”„ ì‹œì‘
-    bool game_loop_running = false;      // ê²Œì„ ë£¨í”„ ì‹¤í–‰ ì—¬ë¶€
+    // ¼­¹ö ÁÖ¿ä °ÔÀÓ ·çÇÁ
+    void StartGameLoop();                // °ÔÀÓ ·çÇÁ ½ÃÀÛ
+    bool game_loop_running = false;      // °ÔÀÓ ·çÇÁ ½ÇÇà ¿©ºÎ
 
 
-    // ë£¨í”„ ë‚´ ì²˜ë¦¬ í•¨ìˆ˜ë“¤
-    void UpdateAllPositions();           // ì„œë²„ authoritative ì´ë™
-    void CheckAllCollisions();           // ì¶©ëŒ íŒì •
-    bool BroadcastGameState();           // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ìƒíƒœ ì „ì†¡
+    // ·çÇÁ ³» Ã³¸® ÇÔ¼öµé
+    void UpdateAllPositions();           // ¼­¹ö authoritative ÀÌµ¿
+    void CheckAllCollisions();           // Ãæµ¹ ÆÇÁ¤
+    bool BroadcastGameState();           // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô »óÅÂ Àü¼Û
 };

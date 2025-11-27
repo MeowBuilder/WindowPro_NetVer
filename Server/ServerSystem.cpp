@@ -2,31 +2,31 @@
 
 #pragma region Constructor / Destructor
 
-// ì„œë²„ ì´ˆê¸°í™”
+// ¼­¹ö ÃÊ±âÈ­
 ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET)
 {
-    // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ ì´ˆê¸°í™”
+    // ¸ğµç Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏ ÃÊ±âÈ­
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
         m_clients[i] = INVALID_SOCKET;
-        memset(&server_players[i], 0, sizeof(Player)); // ì„œë²„ authoritative í”Œë ˆì´ì–´ ì •ë³´
+        memset(&server_players[i], 0, sizeof(Player)); // ¼­¹ö authoritative ÇÃ·¹ÀÌ¾î Á¤º¸
     }
 
-    // ì„ê³„ì˜ì—­ ì´ˆê¸°í™” (ë©€í‹°ìŠ¤ë ˆë“œ ë³´í˜¸)
+    // ÀÓ°è¿µ¿ª ÃÊ±âÈ­ (¸ÖÆ¼½º·¹µå º¸È£)
     InitializeCriticalSection(&m_cs);
 
-    // Winsock ì‹œì‘
+    // Winsock ½ÃÀÛ
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         printf("[Error] WSAStartup() failed\n");
 }
 
-// ì„œë²„ ì¢…ë£Œ ì²˜ë¦¬
+// ¼­¹ö Á¾·á Ã³¸®
 ServerSystem::~ServerSystem()
 {
-    game_loop_running = false; // ê²Œì„ ë£¨í”„ ì¤‘ì§€
+    game_loop_running = false; // °ÔÀÓ ·çÇÁ ÁßÁö
 
-    // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ ì •ë¦¬
+    // ¸ğµç Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏ Á¤¸®
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
         if (m_clients[i] != INVALID_SOCKET)
@@ -36,7 +36,7 @@ ServerSystem::~ServerSystem()
         }
     }
 
-    // ë¦¬ìŠ¨ ì†Œì¼“ ì •ë¦¬
+    // ¸®½¼ ¼ÒÄÏ Á¤¸®
     if (m_listen != INVALID_SOCKET)
     {
         closesocket(m_listen);
@@ -53,7 +53,7 @@ ServerSystem::~ServerSystem()
 
 #pragma region Start & Accept
 
-// ì„œë²„ í¬íŠ¸ ë°”ì¸ë“œ + ë¦¬ìŠ¨
+// ¼­¹ö Æ÷Æ® ¹ÙÀÎµå + ¸®½¼
 bool ServerSystem::Start(u_short port)
 {
     m_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -75,29 +75,29 @@ bool ServerSystem::Start(u_short port)
     return true;
 }
 
-// í´ë¼ì´ì–¸íŠ¸ ì—°ê²° ì²˜ë¦¬
+// Å¬¶óÀÌ¾ğÆ® ¿¬°á Ã³¸®
 bool ServerSystem::AcceptClient()
 {
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
-        // ë¹ˆ ìë¦¬ ë°œê²¬
+        // ºó ÀÚ¸® ¹ß°ß
         if (m_clients[i] == INVALID_SOCKET)
         {
             SOCKET c = accept(m_listen, NULL, NULL);
             if (c == INVALID_SOCKET)
                 return false;
 
-            // ì„ê³„ì˜ì—­ ë³´í˜¸
+            // ÀÓ°è¿µ¿ª º¸È£
             EnterCriticalSection(&m_cs);
             m_clients[i] = c;
             LeaveCriticalSection(&m_cs);
 
             printf("[SERVER] Client %d connected.\n", i);
 
-            // ì ‘ì†í•œ í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ìì‹  ID ë¶€ì—¬
+            // Á¢¼ÓÇÑ Å¬¶óÀÌ¾ğÆ®¿¡°Ô ÀÚ½Å ID ºÎ¿©
             SendAssignIDPacket(i, i);
 
-            // ê°œë³„ Recv thread ì‹œì‘
+            // °³º° Recv thread ½ÃÀÛ
             StartRecvThread(i);
 
             return true;
@@ -112,7 +112,7 @@ bool ServerSystem::AcceptClient()
 
 #pragma region Recv Thread
 
-// í´ë¼ì´ì–¸íŠ¸ë§ˆë‹¤ ë³„ë„ ìˆ˜ì‹  ìŠ¤ë ˆë“œ ìš´ìš©
+// Å¬¶óÀÌ¾ğÆ®¸¶´Ù º°µµ ¼ö½Å ½º·¹µå ¿î¿ë
 void ServerSystem::StartRecvThread(int client_id)
 {
     std::thread([this, client_id]
@@ -120,7 +120,7 @@ void ServerSystem::StartRecvThread(int client_id)
             while (m_clients[client_id] != INVALID_SOCKET)
             {
                 if (!DoRecv(client_id))
-                    break; // Recv ì‹¤íŒ¨ â†’ ì¢…ë£Œ
+                    break; // Recv ½ÇÆĞ ¡æ Á¾·á
             }
 
             printf("[SERVER] Recv thread %d ended.\n", client_id);
@@ -128,14 +128,14 @@ void ServerSystem::StartRecvThread(int client_id)
         }).detach();
 }
 
-// ì‹¤ì œ ìˆ˜ì‹  ì²˜ë¦¬ (recv â†’ ProcessPacket)
+// ½ÇÁ¦ ¼ö½Å Ã³¸® (recv ¡æ ProcessPacket)
 bool ServerSystem::DoRecv(int client_id)
 {
     char buf[4096];
     int len = recv(m_clients[client_id], buf, sizeof(buf), 0);
 
     if (len <= 0)
-        return false; // í´ë¼ì´ì–¸íŠ¸ ì¢…ë£Œ
+        return false; // Å¬¶óÀÌ¾ğÆ® Á¾·á
 
     ProcessPacket(buf, client_id);
     return true;
@@ -147,7 +147,7 @@ bool ServerSystem::DoRecv(int client_id)
 
 #pragma region Packet Processing
 
-// ëª¨ë“  ìˆ˜ì‹  íŒ¨í‚·ì˜ ê³µí†µ ì§„ì…ì 
+// ¸ğµç ¼ö½Å ÆĞÅ¶ÀÇ °øÅë ÁøÀÔÁ¡
 void ServerSystem::ProcessPacket(char* packet, int client_id)
 {
     BasePacket* base = (BasePacket*)packet;
@@ -185,35 +185,35 @@ void ServerSystem::ProcessPacket(char* packet, int client_id)
 
 #pragma region Map Upload / Session Start
 
-// ì œì‘ë§µ ì—…ë¡œë“œ ì²˜ë¦¬
+// Á¦ÀÛ¸Ê ¾÷·Îµå Ã³¸®
 void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
 {
-    // ì„œë²„ authoritative ë§µ ê°±ì‹ 
+    // ¼­¹ö authoritative ¸Ê °»½Å
     server_map = packet->UploadMap;
 
-    // ì„±ê³µ ì‘ë‹µ
+    // ¼º°ø ÀÀ´ä
     SendMapUploadResponsePacket(client_id, true);
 
-    // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ MAP INFO ì „ì†¡
+    // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô MAP INFO Àü¼Û
     BroadcastMapInfo();
 
-    // ê²Œì„ ë£¨í”„ ì‹œì‘
+    // °ÔÀÓ ·çÇÁ ½ÃÀÛ
     if (!game_loop_running)
         StartGameLoop();
 }
 
-// ê¸°ë³¸ë§µ ì‹œì‘ íŒ¨í‚· ì²˜ë¦¬
+// ±âº»¸Ê ½ÃÀÛ ÆĞÅ¶ Ã³¸®
 void ServerSystem::HandleStartSessionRequest(int client_id)
 {
-    LoadDefaultMap(0); // ê¸°ë³¸ë§µ ë¡œë”©
+    LoadDefaultMap(0); // ±âº»¸Ê ·Îµù
 
-    BroadcastMapInfo(); // ëª¨ë“  í´ë¼ì—ê²Œ ì „ì†¡
+    BroadcastMapInfo(); // ¸ğµç Å¬¶ó¿¡°Ô Àü¼Û
 
     if (!game_loop_running)
         StartGameLoop();
 }
 
-// MAP INFO ë°©ì†¡ (ëª¨ë“  í´ë¼ì—ê²Œ ë³´ëƒ„)
+// MAP INFO ¹æ¼Û (¸ğµç Å¬¶ó¿¡°Ô º¸³¿)
 void ServerSystem::BroadcastMapInfo()
 {
     for (int i = 0; i < MAX_PLAYERS; i++)
@@ -233,7 +233,7 @@ void ServerSystem::BroadcastMapInfo()
 
 #pragma region Session Management
 
-// ì¢…ë£Œ ìš”ì²­ ì²˜ë¦¬
+// Á¾·á ¿äÃ» Ã³¸®
 void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, int client_id)
 {
     if (packet->player_id != client_id)
@@ -256,14 +256,14 @@ void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, i
 
 #pragma region Player Update
 
-// ì„œë²„ authoritative í”Œë ˆì´ì–´ ì •ë³´ ê°±ì‹ 
+// ¼­¹ö authoritative ÇÃ·¹ÀÌ¾î Á¤º¸ °»½Å
 void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_id)
 {
     Player& p = server_players[client_id];
 
     p.x = packet->pos.x;
     p.y = packet->pos.y;
-    // ì¶©ëŒ ì²´í¬ì— í•„ìš”í•œ ì‚¬ê°í˜• ê°±ì‹ 
+    // Ãæµ¹ Ã¼Å©¿¡ ÇÊ¿äÇÑ »ç°¢Çü °»½Å
     p.player_rt = { p.x - Size, p.y - Size, p.x + Size, p.y + Size };
 }
 
@@ -273,7 +273,7 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
 
 #pragma region Game Loop
 
-// ì„œë²„ ë©”ì¸ ê²Œì„ ë£¨í”„ ( authoritative update â†’ broadcast )
+// ¼­¹ö ¸ŞÀÎ °ÔÀÓ ·çÇÁ ( authoritative update ¡æ broadcast )
 void ServerSystem::StartGameLoop()
 {
     if (game_loop_running) return;
@@ -284,11 +284,11 @@ void ServerSystem::StartGameLoop()
         {
             while (game_loop_running)
             {
-                UpdateAllPositions();   // ì„œë²„ ê¸°ì¤€ í”Œë ˆì´ì–´/ì  ì´ë™
-                CheckAllCollisions();   // ìŠ¤íŒŒì´í¬/ê¹ƒë°œ ë“± ì¶©ëŒ
-                BroadcastGameState();   // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ìƒíƒœ ì „ì†¡
+                UpdateAllPositions();   // ¼­¹ö ±âÁØ ÇÃ·¹ÀÌ¾î/Àû ÀÌµ¿
+                CheckAllCollisions();   // ½ºÆÄÀÌÅ©/±ê¹ß µî Ãæµ¹
+                BroadcastGameState();   // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô »óÅÂ Àü¼Û
 
-                Sleep(30); // 33ms â†’ ì•½ 30FPS
+                Sleep(30); // 33ms ¡æ ¾à 30FPS
             }
         }).detach();
 
@@ -301,12 +301,12 @@ void ServerSystem::StartGameLoop()
 
 #pragma region Game Logic
 
-// ì„œë²„ authoritative ì¢Œí‘œ ì—…ë°ì´íŠ¸
+// ¼­¹ö authoritative ÁÂÇ¥ ¾÷µ¥ÀÌÆ®
 void ServerSystem::UpdateAllPositions()
 {
     RECT desk_rt = { 0,0,1920,1080 };
 
-    // í”Œë ˆì´ì–´ ì„œë²„ authoritative ì´ë™
+    // ÇÃ·¹ÀÌ¾î ¼­¹ö authoritative ÀÌµ¿
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         if (m_clients[i] != INVALID_SOCKET)
@@ -315,7 +315,7 @@ void ServerSystem::UpdateAllPositions()
         }
     }
 
-    // ì  ì´ë™ ì²˜ë¦¬
+    // Àû ÀÌµ¿ Ã³¸®
     for (int i = 0; i < server_map.enemy_count; i++)
     {
         Move_Enemy(&server_map.enemys[i],
@@ -326,7 +326,7 @@ void ServerSystem::UpdateAllPositions()
     }
 }
 
-// ì¶©ëŒ ì²˜ë¦¬ (Spike / Flag)
+// Ãæµ¹ Ã³¸® (Spike / Flag)
 void ServerSystem::CheckAllCollisions()
 {
     for (int i = 0; i < MAX_PLAYERS; i++)
@@ -387,12 +387,12 @@ bool ServerSystem::SendEventPacket(int client_id, E_EventType event_type)
     return true;
 }
 
-// ì „ í”Œë ˆì´ì–´ ìƒíƒœ ë°©ì†¡ (GameStatePacket)
+// Àü ÇÃ·¹ÀÌ¾î »óÅÂ ¹æ¼Û (GameStatePacket)
 bool ServerSystem::BroadcastGameState()
 {
     SC_GameStatePacket p;
 
-    // ì„œë²„ authoritative ìƒíƒœ ì…ë ¥
+    // ¼­¹ö authoritative »óÅÂ ÀÔ·Â
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         Player& src = server_players[i];
@@ -406,7 +406,7 @@ bool ServerSystem::BroadcastGameState()
         p.players[i].dir = src.LEFT ? LEFT : RIGHT;
     }
 
-    // í´ë¼ì´ì–¸íŠ¸ë“¤ì—ê²Œ ì „ì†¡
+    // Å¬¶óÀÌ¾ğÆ®µé¿¡°Ô Àü¼Û
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         if (m_clients[i] != INVALID_SOCKET)
@@ -425,7 +425,7 @@ bool ServerSystem::BroadcastGameState()
 
 #pragma region Default Map Load
 
-// ê¸°ë³¸ë§µ ìƒì„± + í”Œë ˆì´ì–´ ìŠ¤í° ì´ˆê¸°í™”
+// ±âº»¸Ê »ı¼º + ÇÃ·¹ÀÌ¾î ½ºÆù ÃÊ±âÈ­
 void ServerSystem::LoadDefaultMap(int map_num)
 {
     RECT desk_rt = { 0,0,1920,1080 };
@@ -433,7 +433,7 @@ void ServerSystem::LoadDefaultMap(int map_num)
     Player dummy[3];
     server_map = init_map(desk_rt, dummy, map_num);
 
-    // ëª¨ë“  í”Œë ˆì´ì–´ ë™ì¼ ìŠ¤í° (ì¶”í›„ ë¶„ë¦¬ ê°€ëŠ¥)
+    // ¸ğµç ÇÃ·¹ÀÌ¾î µ¿ÀÏ ½ºÆù (ÃßÈÄ ºĞ¸® °¡´É)
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         server_players[i] =

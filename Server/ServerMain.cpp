@@ -1,4 +1,4 @@
-ï»¿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>
 #include <thread>
@@ -6,13 +6,13 @@
 #include "ServerSystem.h"
 
 // ------------------------------
-// ì „ì—­ ê´€ë¦¬ ë³€ìˆ˜ (ì„ê³„ì˜ì—­ ë³´í˜¸)
+// Àü¿ª °ü¸® º¯¼ö (ÀÓ°è¿µ¿ª º¸È£)
 // ------------------------------
 CRITICAL_SECTION g_cs;
 bool g_running = true;
 
 // ------------------------------
-// g_running ì½ê¸°/ì“°ê¸° í•¨ìˆ˜
+// g_running ÀĞ±â/¾²±â ÇÔ¼ö
 // ------------------------------
 bool IsRunning()
 {
@@ -38,12 +38,12 @@ void AcceptThread(ServerSystem* server)
     {
         if (!server->AcceptClient())
         {
-            // accept ì‹¤íŒ¨ ì‹œ CPU í­ì£¼ ë°©ì§€
+            // accept ½ÇÆĞ ½Ã CPU ÆøÁÖ ¹æÁö
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 
-    printf("[SERVER] AcceptThread ì¢…ë£Œ\n");
+    printf("[SERVER] AcceptThread Á¾·á\n");
 }
 
 // ------------------------------
@@ -51,29 +51,29 @@ void AcceptThread(ServerSystem* server)
 // ------------------------------
 int main()
 {
-    // ì„ê³„ì˜ì—­ ì´ˆê¸°í™”
+    // ÀÓ°è¿µ¿ª ÃÊ±âÈ­
     InitializeCriticalSection(&g_cs);
 
     ServerSystem server;
 
     const u_short PORT = 9000;
 
-    // 1) ì„œë²„ ì‹œì‘
+    // 1) ¼­¹ö ½ÃÀÛ
     if (!server.Start(PORT))
     {
-        printf("[SERVER] ì„œë²„ ì‹œì‘ ì‹¤íŒ¨!\n");
+        printf("[SERVER] ¼­¹ö ½ÃÀÛ ½ÇÆĞ!\n");
         DeleteCriticalSection(&g_cs);
         return -1;
     }
 
     printf("[SERVER] Server started on port %d\n", PORT);
 
-    // 2) í´ë¼ì´ì–¸íŠ¸ accept ìŠ¤ë ˆë“œ ì‹œì‘
+    // 2) Å¬¶óÀÌ¾ğÆ® accept ½º·¹µå ½ÃÀÛ
     std::thread th(AcceptThread, &server);
     th.detach();
 
-    // 3) ì½˜ì†” ëª…ë ¹ ì²˜ë¦¬ (ì¢…ë£Œ)
-    printf("[SERVER] ì¢…ë£Œí•˜ë ¤ë©´ 'quit' ì…ë ¥\n");
+    // 3) ÄÜ¼Ö ¸í·É Ã³¸® (Á¾·á)
+    printf("[SERVER] Á¾·áÇÏ·Á¸é 'quit' ÀÔ·Â\n");
 
     while (IsRunning())
     {
@@ -88,9 +88,9 @@ int main()
         }
     }
 
-    // ServerSystem ì†Œë©¸ìì—ì„œ ì†Œì¼“ ì •ë¦¬ë¨
+    // ServerSystem ¼Ò¸êÀÚ¿¡¼­ ¼ÒÄÏ Á¤¸®µÊ
 
-    // ì„ê³„ì˜ì—­ í•´ì œ
+    // ÀÓ°è¿µ¿ª ÇØÁ¦
     DeleteCriticalSection(&g_cs);
 
     printf("[SERVER] Server stopped.\n");
