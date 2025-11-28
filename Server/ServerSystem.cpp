@@ -1,32 +1,34 @@
-#include "ServerSystem.h"
+ï»¿#include "ServerSystem.h"
 
 #pragma region Constructor / Destructor
 
-// ¼­¹ö ÃÊ±âÈ­
+// ì„œë²„ ì´ˆê¸°í™”
 ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET)
 {
-    // ¸ğµç Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏ ÃÊ±âÈ­
+    now_map = 0;
+    map_type = 0;
+    // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ ì´ˆê¸°í™”
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
         m_clients[i] = INVALID_SOCKET;
-        memset(&server_players[i], 0, sizeof(Player)); // ¼­¹ö authoritative ÇÃ·¹ÀÌ¾î Á¤º¸
+        memset(&server_players[i], 0, sizeof(Player)); // ì„œë²„ authoritative í”Œë ˆì´ì–´ ì •ë³´
     }
 
-    // ÀÓ°è¿µ¿ª ÃÊ±âÈ­ (¸ÖÆ¼½º·¹µå º¸È£)
+    // ì„ê³„ì˜ì—­ ì´ˆê¸°í™” (ë©€í‹°ìŠ¤ë ˆë“œ ë³´í˜¸)
     InitializeCriticalSection(&m_cs);
 
-    // Winsock ½ÃÀÛ
+    // Winsock ì‹œì‘
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         printf("[Error] WSAStartup() failed\n");
 }
 
-// ¼­¹ö Á¾·á Ã³¸®
+// ì„œë²„ ì¢…ë£Œ ì²˜ë¦¬
 ServerSystem::~ServerSystem()
 {
-    game_loop_running = false; // °ÔÀÓ ·çÇÁ ÁßÁö
+    game_loop_running = false; // ê²Œì„ ë£¨í”„ ì¤‘ì§€
 
-    // ¸ğµç Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏ Á¤¸®
+    // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ ì •ë¦¬
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
         if (m_clients[i] != INVALID_SOCKET)
@@ -36,7 +38,7 @@ ServerSystem::~ServerSystem()
         }
     }
 
-    // ¸®½¼ ¼ÒÄÏ Á¤¸®
+    // ë¦¬ìŠ¨ ì†Œì¼“ ì •ë¦¬
     if (m_listen != INVALID_SOCKET)
     {
         closesocket(m_listen);
@@ -53,7 +55,7 @@ ServerSystem::~ServerSystem()
 
 #pragma region Start & Accept
 
-// ¼­¹ö Æ÷Æ® ¹ÙÀÎµå + ¸®½¼
+// ì„œë²„ í¬íŠ¸ ë°”ì¸ë“œ + ë¦¬ìŠ¨
 bool ServerSystem::Start(u_short port)
 {
     m_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -75,29 +77,29 @@ bool ServerSystem::Start(u_short port)
     return true;
 }
 
-// Å¬¶óÀÌ¾ğÆ® ¿¬°á Ã³¸®
+// í´ë¼ì´ì–¸íŠ¸ ì—°ê²° ì²˜ë¦¬
 bool ServerSystem::AcceptClient()
 {
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
-        // ºó ÀÚ¸® ¹ß°ß
+        // ë¹ˆ ìë¦¬ ë°œê²¬
         if (m_clients[i] == INVALID_SOCKET)
         {
             SOCKET c = accept(m_listen, NULL, NULL);
             if (c == INVALID_SOCKET)
                 return false;
 
-            // ÀÓ°è¿µ¿ª º¸È£
+            // ì„ê³„ì˜ì—­ ë³´í˜¸
             EnterCriticalSection(&m_cs);
             m_clients[i] = c;
             LeaveCriticalSection(&m_cs);
 
             printf("[SERVER] Client %d connected.\n", i);
 
-            // Á¢¼ÓÇÑ Å¬¶óÀÌ¾ğÆ®¿¡°Ô ÀÚ½Å ID ºÎ¿©
+            // ì ‘ì†í•œ í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ìì‹  ID ë¶€ì—¬
             SendAssignIDPacket(i, i);
 
-            // °³º° Recv thread ½ÃÀÛ
+            // ê°œë³„ Recv thread ì‹œì‘
             StartRecvThread(i);
 
             return true;
@@ -112,7 +114,7 @@ bool ServerSystem::AcceptClient()
 
 #pragma region Recv Thread
 
-// Å¬¶óÀÌ¾ğÆ®¸¶´Ù º°µµ ¼ö½Å ½º·¹µå ¿î¿ë
+// í´ë¼ì´ì–¸íŠ¸ë§ˆë‹¤ ë³„ë„ ìˆ˜ì‹  ìŠ¤ë ˆë“œ ìš´ìš©
 void ServerSystem::StartRecvThread(int client_id)
 {
     std::thread([this, client_id]
@@ -120,7 +122,7 @@ void ServerSystem::StartRecvThread(int client_id)
             while (m_clients[client_id] != INVALID_SOCKET)
             {
                 if (!DoRecv(client_id))
-                    break; // Recv ½ÇÆĞ ¡æ Á¾·á
+                    break; // Recv ì‹¤íŒ¨ â†’ ì¢…ë£Œ
             }
 
             printf("[SERVER] Recv thread %d ended.\n", client_id);
@@ -128,14 +130,14 @@ void ServerSystem::StartRecvThread(int client_id)
         }).detach();
 }
 
-// ½ÇÁ¦ ¼ö½Å Ã³¸® (recv ¡æ ProcessPacket)
+// ì‹¤ì œ ìˆ˜ì‹  ì²˜ë¦¬ (recv â†’ ProcessPacket)
 bool ServerSystem::DoRecv(int client_id)
 {
     char buf[4096];
     int len = recv(m_clients[client_id], buf, sizeof(buf), 0);
 
     if (len <= 0)
-        return false; // Å¬¶óÀÌ¾ğÆ® Á¾·á
+        return false; // í´ë¼ì´ì–¸íŠ¸ ì¢…ë£Œ
 
     ProcessPacket(buf, client_id);
     return true;
@@ -147,7 +149,7 @@ bool ServerSystem::DoRecv(int client_id)
 
 #pragma region Packet Processing
 
-// ¸ğµç ¼ö½Å ÆĞÅ¶ÀÇ °øÅë ÁøÀÔÁ¡
+// ëª¨ë“  ìˆ˜ì‹  íŒ¨í‚·ì˜ ê³µí†µ ì§„ì…ì 
 void ServerSystem::ProcessPacket(char* packet, int client_id)
 {
     BasePacket* base = (BasePacket*)packet;
@@ -160,7 +162,7 @@ void ServerSystem::ProcessPacket(char* packet, int client_id)
         break;
 
     case CS_START_SESSION_REQ:
-        HandleStartSessionRequest(client_id);
+        HandleStartSessionRequest((CS_StartSessionRequestPacket*)packet,client_id);
         break;
 
     case CS_END_SESSION_REQ:
@@ -185,44 +187,66 @@ void ServerSystem::ProcessPacket(char* packet, int client_id)
 
 #pragma region Map Upload / Session Start
 
-// Á¦ÀÛ¸Ê ¾÷·Îµå Ã³¸®
+// ì œì‘ë§µ ì—…ë¡œë“œ ì²˜ë¦¬
 void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
 {
-    // ¼­¹ö authoritative ¸Ê °»½Å
-    server_map = packet->UploadMap;
+    // ì„œë²„ authoritative ë§µ ê°±ì‹ 
+    server_map[now_map] = packet->UploadMap;
 
-    // ¼º°ø ÀÀ´ä
+    // ì„±ê³µ ì‘ë‹µ
     SendMapUploadResponsePacket(client_id, true);
 
-    // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô MAP INFO Àü¼Û
-    BroadcastMapInfo();
-
-    // °ÔÀÓ ·çÇÁ ½ÃÀÛ
-    if (!game_loop_running)
-        StartGameLoop();
-}
-
-// ±âº»¸Ê ½ÃÀÛ ÆĞÅ¶ Ã³¸®
-void ServerSystem::HandleStartSessionRequest(int client_id)
-{
-    LoadDefaultMap(0); // ±âº»¸Ê ·Îµù
-
-    BroadcastMapInfo(); // ¸ğµç Å¬¶ó¿¡°Ô Àü¼Û
-
-    if (!game_loop_running)
-        StartGameLoop();
-}
-
-// MAP INFO ¹æ¼Û (¸ğµç Å¬¶ó¿¡°Ô º¸³¿)
-void ServerSystem::BroadcastMapInfo()
-{
+    // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ MAP INFO ì „ì†¡
+   // BroadcastMapInfo();
+    // ì—ë”§ ë§µì´ë‘ ê¸°ë³¸ ë§µ í•œë²ˆì— í•´ì„œ í•¨ìˆ˜ í•˜ë‚˜ë¡œ ì²˜ë¦¬í•˜ê¸° ê·€ì°®ì•„ì¡ŒìŒ.
+    // ì¼ë‹¨ ëŒì•„ê°€ê²ŒëŠ” ë‘ê³  ë¦¬íŒ©í† ë§ í•„ìš”
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         if (m_clients[i] != INVALID_SOCKET)
         {
             SC_MapInfoPacket info;
-            info.Init(server_map);
+            info.Init(server_map[now_map]);
             SendMapInfoPacket(i, &info);
+        }
+    }
+    // ê²Œì„ ë£¨í”„ ì‹œì‘
+    if (!game_loop_running)
+        StartGameLoop();
+}
+
+// ê¸°ë³¸ë§µ ì‹œì‘ íŒ¨í‚· ì²˜ë¦¬
+
+void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packet,int client_id)
+{
+    ((CS_StartSessionRequestPacket*)packet)->Decode();
+    map_type = packet->map_type;
+    // ë§µ íƒ€ì…ì´ ê¸°ë³¸ ë§µì¼ ê²½ìš°ì—ëŠ” ë§µ ì •ë³´ ë‹¤ ì±„ìš°ê³  ì¢…ë£Œ(ê·¸ í›„ì— ëª¨ë“  í´ë¼í•œí…Œ ë§µ ì •ë³´ ë‹¤ ì „ë‹¬í•´ì£¼ë©´ë¨,
+    // í•œë²ˆì— 4ê°œ ë‹¤ ë³´ë‚¼ì§€, ê¹ƒë°œ ë‹¿ì•„ì„œ ì´ë²¤íŠ¸ ë°œìƒ ì‹œì— ë§µ ì •ë³´ í•˜ë‚˜ì”© ë³´ë‚¼ì§€ëŠ” ì¶”í›„ ê³ ë ¤
+    if (map_type != 0) {
+        return;
+    }
+    else {
+        Make_Defalt_Map();
+    }
+    BroadcastMapInfo(); // ëª¨ë“  í´ë¼ì—ê²Œ ì „ì†¡
+
+    if (!game_loop_running)
+        StartGameLoop();
+}
+
+// MAP INFO ë°©ì†¡ (ëª¨ë“  í´ë¼ì—ê²Œ ë³´ëƒ„)
+// ì›ë˜ëŠ” ì—ë”§ / ê¸°ë³¸ ê³µìš©ì¸ë° í˜„ì¬ëŠ” ê¸°ë³¸ ë§µì—ë§Œ ì‚¬ìš©í•˜ëŠ” ì½”ë“œê°€ ë¨.
+void ServerSystem::BroadcastMapInfo()
+{
+    for (int i = 0; i < MAX_PLAYERS; i++)
+    {
+        for (int j = 0;j < 4;++j) {
+            if (m_clients[i] != INVALID_SOCKET)
+            {
+                SC_MapInfoPacket info;
+                info.Init(server_map[j]);
+                SendMapInfoPacket(i, &info);
+            }
         }
     }
 }
@@ -233,7 +257,7 @@ void ServerSystem::BroadcastMapInfo()
 
 #pragma region Session Management
 
-// Á¾·á ¿äÃ» Ã³¸®
+// ì¢…ë£Œ ìš”ì²­ ì²˜ë¦¬
 void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, int client_id)
 {
     if (packet->player_id != client_id)
@@ -256,14 +280,14 @@ void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, i
 
 #pragma region Player Update
 
-// ¼­¹ö authoritative ÇÃ·¹ÀÌ¾î Á¤º¸ °»½Å
+// ì„œë²„ authoritative í”Œë ˆì´ì–´ ì •ë³´ ê°±ì‹ 
 void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_id)
 {
     Player& p = server_players[client_id];
 
     p.x = packet->pos.x;
     p.y = packet->pos.y;
-    // Ãæµ¹ Ã¼Å©¿¡ ÇÊ¿äÇÑ »ç°¢Çü °»½Å
+    // ì¶©ëŒ ì²´í¬ì— í•„ìš”í•œ ì‚¬ê°í˜• ê°±ì‹ 
     p.player_rt = { p.x - Size, p.y - Size, p.x + Size, p.y + Size };
 }
 
@@ -273,7 +297,7 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
 
 #pragma region Game Loop
 
-// ¼­¹ö ¸ŞÀÎ °ÔÀÓ ·çÇÁ ( authoritative update ¡æ broadcast )
+// ì„œë²„ ë©”ì¸ ê²Œì„ ë£¨í”„ ( authoritative update â†’ broadcast )
 void ServerSystem::StartGameLoop()
 {
     if (game_loop_running) return;
@@ -284,11 +308,11 @@ void ServerSystem::StartGameLoop()
         {
             while (game_loop_running)
             {
-                UpdateAllPositions();   // ¼­¹ö ±âÁØ ÇÃ·¹ÀÌ¾î/Àû ÀÌµ¿
-                CheckAllCollisions();   // ½ºÆÄÀÌÅ©/±ê¹ß µî Ãæµ¹
-                BroadcastGameState();   // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô »óÅÂ Àü¼Û
+                UpdateAllPositions();   // ì„œë²„ ê¸°ì¤€ í”Œë ˆì´ì–´/ì  ì´ë™
+                CheckAllCollisions();   // ìŠ¤íŒŒì´í¬/ê¹ƒë°œ ë“± ì¶©ëŒ
+                BroadcastGameState();   // ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ìƒíƒœ ì „ì†¡
 
-                Sleep(30); // 33ms ¡æ ¾à 30FPS
+                Sleep(30); // 33ms â†’ ì•½ 30FPS
             }
         }).detach();
 
@@ -301,12 +325,12 @@ void ServerSystem::StartGameLoop()
 
 #pragma region Game Logic
 
-// ¼­¹ö authoritative ÁÂÇ¥ ¾÷µ¥ÀÌÆ®
+// ì„œë²„ authoritative ì¢Œí‘œ ì—…ë°ì´íŠ¸
 void ServerSystem::UpdateAllPositions()
 {
     RECT desk_rt = { 0,0,1920,1080 };
 
-    // ÇÃ·¹ÀÌ¾î ¼­¹ö authoritative ÀÌµ¿
+    // í”Œë ˆì´ì–´ ì„œë²„ authoritative ì´ë™
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         if (m_clients[i] != INVALID_SOCKET)
@@ -315,18 +339,18 @@ void ServerSystem::UpdateAllPositions()
         }
     }
 
-    // Àû ÀÌµ¿ Ã³¸®
-    for (int i = 0; i < server_map.enemy_count; i++)
+    // ì  ì´ë™ ì²˜ë¦¬
+    for (int i = 0; i < server_map[now_map].enemy_count; i++)
     {
-        Move_Enemy(&server_map.enemys[i],
-            server_map.blocks[server_map.enemys[i].on_block],
+        Move_Enemy(&server_map[now_map].enemys[i],
+            server_map[now_map].blocks[server_map[now_map].enemys[i].on_block],
             4);
 
-        Update_Enemy_rect(&server_map.enemys[i]);
+        Update_Enemy_rect(&server_map[now_map].enemys[i]);
     }
 }
 
-// Ãæµ¹ Ã³¸® (Spike / Flag)
+// ì¶©ëŒ ì²˜ë¦¬ (Spike / Flag)
 void ServerSystem::CheckAllCollisions()
 {
     for (int i = 0; i < MAX_PLAYERS; i++)
@@ -335,16 +359,20 @@ void ServerSystem::CheckAllCollisions()
 
         Player& p = server_players[i];
 
-        for (int o = 0; o < server_map.object_count; o++)
+        for (int o = 0; o < server_map[now_map].object_count; o++)
         {
             RECT dummy;
-            if (IntersectRect(&dummy, &p.player_rt, &server_map.objects[o].Obj_rt))
+            if (IntersectRect(&dummy, &p.player_rt, &server_map[now_map].objects[o].Obj_rt))
             {
-                if (server_map.objects[o].obj_type == Spike)
+                if (server_map[now_map].objects[o].obj_type == Spike)
                     p.player_life--;
 
-                else if (server_map.objects[o].obj_type == Flag)
+                else if (server_map[now_map].objects[o].obj_type == Flag) {
                     SendEventPacket(i, STAGE_CLEAR);
+                    // ê¸°ë³¸ ë§µì¼ ê²½ìš°ì—ëŠ” ì„œë²„ì—ì„œ ê´€ë¦¬í•˜ëŠ” í˜„ì¬ ë§µ ì •ë³´ë„ í•˜ë‚˜ ê°±ì‹ 
+                    if (map_type == 0 && now_map < 4) ++now_map;
+                }
+                
             }
         }
     }
@@ -387,12 +415,12 @@ bool ServerSystem::SendEventPacket(int client_id, E_EventType event_type)
     return true;
 }
 
-// Àü ÇÃ·¹ÀÌ¾î »óÅÂ ¹æ¼Û (GameStatePacket)
+// ì „ í”Œë ˆì´ì–´ ìƒíƒœ ë°©ì†¡ (GameStatePacket)
 bool ServerSystem::BroadcastGameState()
 {
     SC_GameStatePacket p;
 
-    // ¼­¹ö authoritative »óÅÂ ÀÔ·Â
+    // ì„œë²„ authoritative ìƒíƒœ ì…ë ¥
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         Player& src = server_players[i];
@@ -406,7 +434,7 @@ bool ServerSystem::BroadcastGameState()
         p.players[i].dir = src.LEFT ? LEFT : RIGHT;
     }
 
-    // Å¬¶óÀÌ¾ğÆ®µé¿¡°Ô Àü¼Û
+    // í´ë¼ì´ì–¸íŠ¸ë“¤ì—ê²Œ ì „ì†¡
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         if (m_clients[i] != INVALID_SOCKET)
@@ -419,25 +447,234 @@ bool ServerSystem::BroadcastGameState()
     return true;
 }
 
+void ServerSystem::Make_Defalt_Map()
+{
+    Map new_map;
+    RECT Desk_rect{ 0,0,1920,1080 };
+    int randomnum;
+    //ë§µ ì´ˆê¸°í™” ë° ìƒì„±
+    memset(&new_map, 0, sizeof(Map));
+    //ë§µ ë¸”ëŸ­ ì´ˆê¸°í™”
+    //0ë²ˆ ë§µ
+	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+	new_map.block_count++;
+
+	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+	new_map.block_count++;
+
+	for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
+	{
+		randomnum = rand() % 2;
+		if (randomnum == 0)
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 192;
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+		}
+		else
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+		}
+	}
+
+	//ë§µ ì˜¤ë¸Œì íŠ¸ ì´ˆê¸°í™”
+	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Spike;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
+
+	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+	{
+		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
+	}
+
+	new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + 48;
+	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Flag;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
+
+	//í”Œë ˆì´ì–´ ìƒì„±
+	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+    server_map[0] = new_map;
+	//1ë²ˆ ë§µ
+
+    //ë§µ ì´ˆê¸°í™” ë° ìƒì„±
+	//ë§µ ë¸”ëŸ­ ì´ˆê¸°í™”
+    memset(&new_map, 0, sizeof(Map));
+
+	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+	new_map.block_count++;
+
+	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+	new_map.block_count++;
+
+	for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
+	{
+		new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
+		new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y - 192;
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
+	}
+
+	//ë§µ ì˜¤ë¸Œì íŠ¸ ì´ˆê¸°í™”
+	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Spike;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
+
+	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+	{
+		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
+	}
+
+	new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
+	new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Flag;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
+
+	//í”Œë ˆì´ì–´ ìƒì„±
+	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+
+    server_map[1] = new_map;
+    
+	//2ë²ˆ ë§µ
+	//ë§µ ì´ˆê¸°í™” ë° ìƒì„±
+	//ë§µ ë¸”ëŸ­ ì´ˆê¸°í™”
+    memset(&new_map, 0, sizeof(Map));
+
+	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+	new_map.block_count++;
+
+	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+	new_map.block_count++;
+
+	for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
+	{
+		new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
+		new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
+		while (new_map.blocks[new_map.block_count].y >= new_map.blocks[0].Block_rt.top)
+		{
+			new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
+		}
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
+
+		new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[new_map.block_count - 1].x, new_map.blocks[new_map.block_count - 1].Block_rt.top - Size, new_map.block_count - 1);
+		new_map.enemy_count++;
+	}
+
+	//ë§µ ì˜¤ë¸Œì íŠ¸ ì´ˆê¸°í™”
+	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Spike;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
+
+	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+	{
+		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
+	}
+
+	new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
+	new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
+	new_map.objects[new_map.object_count].obj_type = Flag;
+	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+	new_map.object_count++;
+
+	//í”Œë ˆì´ì–´ ìƒì„±
+	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+
+    server_map[2] = new_map;
+	//3ë²ˆ ë§µ(ë³´ìŠ¤ì „)
+	//ë§µ ì´ˆê¸°í™” ë° ìƒì„±
+	//ë§µ ë¸”ëŸ­ ì´ˆê¸°í™”
+    memset(&new_map, 0, sizeof(Map));
+
+	new_map.blocks[new_map.block_count].x = Desk_rect.left + 100;
+	new_map.blocks[new_map.block_count].y = Desk_rect.bottom - 200;
+	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
+	new_map.block_count++;
+
+	for (int i = 0; i < ((Desk_rect.right - 260) / 480); i++)
+	{
+		new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 480;
+		new_map.blocks[new_map.block_count].y = Desk_rect.bottom - ((rand() % 256) + 160);
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
+	}
+
+	new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[1].x, new_map.blocks[1].Block_rt.top - Size, 1);
+	new_map.enemy_count++;
+
+	//ë³´ìŠ¤ ì´ˆê¸°í™”
+	new_map.boss.x = Desk_rect.right - 160;
+	new_map.boss.y = Desk_rect.bottom - 320;
+	new_map.boss.life = 3;
+	new_map.boss.boss_rect = { new_map.boss.x - 160,new_map.boss.y - 160,new_map.boss.x + 160,new_map.boss.y + 160 };
+	new_map.boss_count++;
+	new_map.boss.attack_time = 480;
+
+	//í”Œë ˆì´ì–´ ìƒì„±
+	new_map.P_Start_Loc[0].x = new_map.blocks[0].x;
+	new_map.P_Start_Loc[0].y = new_map.blocks[0].Block_rt.top - Size;
+
+    server_map[3] = new_map;
+}
+
 #pragma endregion
 
 
 
 #pragma region Default Map Load
 
-// ±âº»¸Ê »ı¼º + ÇÃ·¹ÀÌ¾î ½ºÆù ÃÊ±âÈ­
+// ê¸°ë³¸ë§µ ìƒì„± + í”Œë ˆì´ì–´ ìŠ¤í° ì´ˆê¸°í™”
 void ServerSystem::LoadDefaultMap(int map_num)
 {
     RECT desk_rt = { 0,0,1920,1080 };
 
     Player dummy[3];
-    server_map = init_map(desk_rt, dummy, map_num);
-
-    // ¸ğµç ÇÃ·¹ÀÌ¾î µ¿ÀÏ ½ºÆù (ÃßÈÄ ºĞ¸® °¡´É)
+   // server_map = init_map(desk_rt, dummy, map_num);
+    Make_Defalt_Map(); 
+    // ëª¨ë“  í”Œë ˆì´ì–´ ë™ì¼ ìŠ¤í° (ì¶”í›„ ë¶„ë¦¬ ê°€ëŠ¥)
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         server_players[i] =
-            Make_Player(server_map.P_Start_Loc[0].x, server_map.P_Start_Loc[0].y);
+            Make_Player(server_map[0].P_Start_Loc[0].x, server_map[0].P_Start_Loc[0].y);
     }
 }
 
