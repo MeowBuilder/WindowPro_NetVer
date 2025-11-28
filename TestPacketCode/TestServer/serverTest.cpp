@@ -156,6 +156,10 @@ int main()
 	//플레이어 생성
 	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
 	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+    new_map.P_Start_Loc[1].x = Desk_rect.left + 64;
+    new_map.P_Start_Loc[1].y = Desk_rect.bottom - 128;
+    new_map.P_Start_Loc[2].x = Desk_rect.left + 64;
+    new_map.P_Start_Loc[2].y = Desk_rect.bottom - 128;
 
 
     printf("\n--- TEST: SC_MapInfoPacket (before Encode) ---\n");

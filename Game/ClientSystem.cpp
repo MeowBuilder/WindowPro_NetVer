@@ -163,6 +163,10 @@ Map ClientSystem::GetMap()
 
     EnterCriticalSection(&m_map_cs);
     temp_map = m_map;
+
+    players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
+    players[1] = Make_Player(temp_map.P_Start_Loc[0].x + 200, temp_map.P_Start_Loc[0].y - 100);
+    players[2] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
     LeaveCriticalSection(&m_map_cs);
 
     return temp_map;

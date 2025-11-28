@@ -10,6 +10,9 @@ Player Make_Player(int x, int y) {
 	newPlayer.jump_count = 0;
 	newPlayer.player_rt = { newPlayer.x - Size, newPlayer.y - Size, newPlayer.x + Size, newPlayer.y + Size };
 	newPlayer.player_life = 3;
+	newPlayer.Walk_state = 0; 
+	newPlayer.frame_counter = 0;
+	newPlayer.Jump_state = 0;
 	return newPlayer;
 }
 

@@ -22,6 +22,8 @@ public:
     bool SendEndSessionRequestPacket();
     Map GetMap();
 
+    Player getPlayer(int player_id) { return players[player_id]; };
+
     // 게임 상태
     u_short my_player_id;
 private:
@@ -33,6 +35,8 @@ private:
     CRITICAL_SECTION m_map_cs;
 
     HANDLE maprecvEvent;
+
+    Player players[3];
 
     // 패킷 처리
     bool DoRecv();

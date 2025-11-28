@@ -46,7 +46,11 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 void CreateGameWindow(HINSTANCE hInstance);
+void CreateGameWindow2(HINSTANCE hInstance);
 void CloseGameWindow(HWND hGameWnd);
+
+LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
+void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 
 LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
@@ -123,18 +127,18 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
-	CS_StartSessionRequestPacket SSRP;
+	CS_StartSessionRequestPacket SSRP(0);
 	static HBITMAP Title_bitmap, Clear_bitmap, Start_bitmap, Exit_bitmap, Edit_bitmap;
 	static RECT Client_rect;
     switch (message) {
 	case WM_CREATE:
-		result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
+		result = FMOD::System_Create(&ssystem);
 		if (result != FMOD_OK)
 			exit(0);
-		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
-		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
-		ssystem->createSound("button.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
-		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3�� ���� ���� �� ����
+		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata);
+		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1);
+		ssystem->createSound("button.wav", FMOD_LOOP_OFF, 0, &sound2);
+		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound3);
 
 		channel->stop();
 		ssystem->playSound(sound1, 0, false, &channel);
@@ -172,6 +176,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			player = Make_Player(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
 
 			CreateGameWindow(g_hinst);
+			CreateGameWindow2(g_hinst);
 			break;
 		case 2: // ���� ���� ��ư
 			channel->stop();
@@ -191,7 +196,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
 			ShowWindow(hWnd, SW_HIDE);
-			// ���ο� ���� �����츦 ����
+
 			CreateEditWindow(g_hinst);
 			break;
 		default:
@@ -243,9 +248,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 }
 
 void CloseGameWindow(HWND hGameWnd) {
-	// ���� �����츦 �ݰ� Ÿ��Ʋ �����츦 �ٽ� ������
-	DestroyWindow(hGameWnd);
 	HWND hTitleWnd = FindWindow(L"WindowClass", NULL);
+
+	// 1. 메인 게임 윈도우 찾기 및 닫기
+	HWND hMainGameWnd = FindWindow(L"GameWindow", NULL);
+	if (hMainGameWnd) {
+		DestroyWindow(hMainGameWnd);
+	}
+
+	// 2. 다른 플레이어 윈도우 찾기 및 닫기
+	HWND hOtherPlayerWnd = FindWindow(L"GameWindow2", NULL);
+	if (hOtherPlayerWnd) {
+		DestroyWindow(hOtherPlayerWnd);
+	}
+
+	UnregisterClass(L"GameWindow", g_hinst);
+	UnregisterClass(L"GameWindow2", g_hinst);
+
+	// 타이틀 윈도우 다시 표시
 	if (hTitleWnd) {
 		ShowWindow(hTitleWnd, SW_SHOW);
 	}
@@ -274,15 +294,37 @@ void CreateGameWindow(HINSTANCE hInstance) {
 	hWnd = CreateWindow(L"GameWindow", lpszWindowName, WS_CAPTION, 100, 50, 800, 800, NULL, NULL, hInstance, NULL);
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
+}
 
-	while (GetMessage(&Message, 0, 0, 0)) {
-		TranslateMessage(&Message);
-		DispatchMessage(&Message);
-	}
+void CreateGameWindow2(HINSTANCE hInstance) {
+	HWND hWnd;
+	WNDCLASSEX WndClass;
+	g_hinst = hInstance;
+
+	WndClass.cbSize = sizeof(WndClass);
+	WndClass.style = CS_HREDRAW | CS_VREDRAW;
+	WndClass.lpfnWndProc = (WNDPROC)WndProcGame2; // ★ WndProcGame2를 사용
+	WndClass.cbClsExtra = 0;
+	WndClass.cbWndExtra = 0;
+	WndClass.hInstance = hInstance;
+	WndClass.hIcon = LoadIcon(NULL, IDI_ASTERISK);
+	WndClass.hCursor = LoadCursor(NULL, IDC_NO);
+	WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	WndClass.lpszMenuName = NULL;
+	WndClass.lpszClassName = L"GameWindow2"; // 고유한 클래스 이름
+	WndClass.hIconSm = LoadIcon(NULL, IDI_ASTERISK);
+	RegisterClassEx(&WndClass);
+
+	// 메인 게임 윈도우와 겹치지 않도록 위치와 크기를 조정할 수 있습니다.
+	hWnd = CreateWindow(L"GameWindow2", L"Other Player", WS_CAPTION | WS_SYSMENU, 950, 50, 320, 320, NULL, NULL, hInstance, NULL);
+	ShowWindow(hWnd, SW_SHOW);
+	UpdateWindow(hWnd);
+
+	// ★ 메시지 루프는 제거해야 합니다. (위의 1번 섹션 참고)
+	// 이 함수는 윈도우를 생성하고 제어를 메인 루프에 반환합니다.
 }
 
 void CloseEditWindow(HWND hEditWnd) {
-	// ���� �����츦 �ݰ� Ÿ��Ʋ �����츦 �ٽ� ������
 	DestroyWindow(hEditWnd);
 	HWND hTitleWnd = FindWindow(L"WindowClass", NULL);
 	if (hTitleWnd) {
@@ -321,6 +363,115 @@ void CreateEditWindow(HINSTANCE hInstance) {
 		TranslateMessage(&Message);
 		DispatchMessage(&Message);
 	}
+}
+
+void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
+	RECT temp_rt;
+	RECT Desk_rect;
+	int randomnum;
+
+	GetClientRect(hWnd, &wnd_rt);
+	GetWindowRect(hWnd, &window_rect);
+	Player hPlayer;
+	hPlayer = client.getPlayer(1);
+	Desk_rect = { 0,0,1920,1080 };
+	switch (idEvent)
+	{
+	case 1:
+		if (window_move)
+		{
+			MoveWindow(hWnd, std::clamp(hPlayer.x - (wnd_rt.right / 2), (long)0, (long)Desk_rect.right - (wnd_rt.right)), hPlayer.y - (wnd_rt.bottom / 2), 320, 320, true);
+		}
+		else
+		{
+			MoveWindow(hWnd, window_rect.left, hPlayer.y - (wnd_rt.bottom / 2), 320, 320, true);
+		}
+	default:
+		break;
+	}
+	InvalidateRect(hWnd, NULL, false);
+}
+
+LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	HDC hdc, mdc, resourcedc;
+	HBITMAP hBitmap;
+	static HBITMAP Character_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap, Tino_bitmap;
+	PAINTSTRUCT ps;
+	static RECT Desk_rect;
+
+	Player hPlayer;
+	hPlayer = client.getPlayer(1);
+	static int x, y;
+	switch (iMsg) {
+	case WM_CREATE:
+		result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
+		if (result != FMOD_OK)
+			exit(0);
+		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
+		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
+		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
+		ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3�� ���� ���� �� ����
+
+
+		channel->stop();
+		ssystem->playSound(sound1, 0, false, &channel);
+		srand(time(NULL));
+		Character_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP4));
+		Enemy_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP1));
+		Enemy_rv_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP14));
+		Object_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP2));
+		Platforms_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP3));
+		BGM_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP10));
+		BGN_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP11));
+		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
+		GetWindowRect(GetDesktopWindow(), &Desk_rect);
+		window_move = true;
+		player.player_life = 3;
+
+		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc2);
+		break;
+	case WM_PAINT:
+		hdc = BeginPaint(hWnd, &ps);
+		mdc = CreateCompatibleDC(hdc);
+		resourcedc = CreateCompatibleDC(hdc);
+		hBitmap = CreateCompatibleBitmap(hdc, Desk_rect.right, Desk_rect.bottom);
+		SelectObject(mdc, hBitmap);
+		Rectangle(mdc, -1, -1, Desk_rect.right, Desk_rect.bottom);
+		GetWindowRect(hWnd, &window_rect);
+
+		if (map.boss_count != 0)
+		{
+			SelectObject(resourcedc, BGN_bitmap);
+			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
+		}
+		else
+		{
+			SelectObject(resourcedc, BGM_bitmap);
+			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
+		}
+
+
+		Player_Draw(&mdc, &resourcedc, Tino_bitmap, hPlayer);
+
+		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
+
+		BitBlt(hdc, 0, 0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
+		DeleteDC(mdc);
+		DeleteDC(resourcedc);
+		DeleteObject(hBitmap);
+		EndPaint(hWnd, &ps);
+		break;
+	case WM_DESTROY:
+		DeleteObject(Character_bitmap);
+		DeleteObject(Enemy_bitmap);
+		DeleteObject(Object_bitmap);
+		DeleteObject(Platforms_bitmap);
+		DeleteObject(BGM_bitmap);
+		DeleteObject(BGN_bitmap);
+		ssystem->release();
+		break;
+	}
+	return DefWindowProc(hWnd, iMsg, wParam, lParam);
 }
 
 
@@ -454,10 +605,8 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 
 
-		//ĳ���� �׸���
 		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);
 
-		//�� �׸���
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
 
 		BitBlt(hdc, 0,0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
@@ -474,7 +623,6 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		DeleteObject(BGM_bitmap);
 		DeleteObject(BGN_bitmap);
 		ssystem->release();
-		PostQuitMessage(0);
 		break;
 	}
 	return DefWindowProc(hWnd, iMsg, wParam, lParam);
