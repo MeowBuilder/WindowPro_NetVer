@@ -60,6 +60,7 @@ public:
     // 클라이언트의 PlayerUpdate 패킷 처리 (서버 authoritative update)
     void HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_id);
 
+    void HandleDisconnect(int client_id);
 
     // 패킷 송신 함수들
     // 업로드 성공/실패 응답 보내기

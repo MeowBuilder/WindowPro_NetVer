@@ -113,6 +113,19 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandleMapInfo(p);
             break;
         }
+        case SC_DISCONNECT: {
+            SC_DisconnectPacket* p = (SC_DisconnectPacket*)packet_buf;
+            p->Decode();
+            // p->Log(); // 디버깅용, 필요시 활성화
+
+            if (p->disconnected_player_id >= 0 && p->disconnected_player_id < 3) {
+                players[p->disconnected_player_id].is_connected = false;
+                printf("[Info] Player %hu disconnected.\n", p->disconnected_player_id);
+            } else {
+                printf("[Warning] Received SC_DISCONNECT with invalid player ID: %hu\n", p->disconnected_player_id);
+            }
+            break;
+        }
         // 다른 패킷 처리 케이스를 여기에 추가
         default: {
             printf("[Warning] Received unknown packet type: %d\n", base_p->type);

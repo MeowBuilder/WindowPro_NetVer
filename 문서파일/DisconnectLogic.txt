@@ -1,0 +1,194 @@
+# 연결 종료 로직 (`SC_DisconnectPacket`) 구현 상세
+
+## 1. 개요
+
+본 문서는 `WindowPro_NetVer` 프로젝트에 새로 구현된 클라이언트 연결 종료 처리 로직을 설명합니다. 이 로직의 핵심 목표는 특정 클라이언트의 연결이 **정상적으로** 또는 **비정상적으로** 종료되었을 때, 이를 서버가 안정적으로 감지하고 다른 모든 클라이언트에게 해당 사실을 알려 게임 상태를 동기화하는 것입니다.
+
+## 2. 핵심 구성 요소
+
+- **`SC_DisconnectPacket`**: 서버가 클라이언트에게 다른 플레이어의 연결 종료를 알리기 위해 사용하는 새로운 패킷입니다.
+- **`ServerSystem::HandleDisconnect()`**: 서버에서 클라이언트의 연결 종료에 따른 모든 정리 및 전파 작업을 처리하는 핵심 함수입니다.
+- **서버의 연결 종료 감지 로직**: `recv()` 함수의 반환값과 `CS_EndSessionRequestPacket`을 통해 정상/비정상 종료를 모두 감지합니다.
+- **클라이언트의 상태 업데이트 로직**: `SC_DisconnectPacket`을 수신했을 때, 클라이언트가 자신의 게임 월드에서 해당 플레이어를 비활성화합니다.
+
+---
+
+## 3. 패킷 정의 (`Game/Packets.h`)
+
+### `SC_DisconnectPacket` 클래스
+
+서버가 클라이언트로 전송(Server-to-Client)하는 패킷으로, 어떤 플레이어의 연결이 끊어졌는지 그 ID를 담아 나머지 클라이언트들에게 브로드캐스팅됩니다.
+
+```cpp
+// [S->C] 다른 플레이어의 접속 종료를 알리는 패킷
+class SC_DisconnectPacket : public BasePacket {
+public:
+    u_short disconnected_player_id; // 접속 종료한 플레이어의 ID
+
+    SC_DisconnectPacket() {
+        size = sizeof(SC_DisconnectPacket);
+        type = SC_DISCONNECT;
+        disconnected_player_id = (u_short)-1;
+    }
+
+    SC_DisconnectPacket(u_short id) {
+        size = sizeof(SC_DisconnectPacket);
+        type = SC_DISCONNECT;
+        disconnected_player_id = id;
+    }
+
+    void Encode() {
+        size = htons(size);
+        disconnected_player_id = htons(disconnected_player_id);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        disconnected_player_id = ntohs(disconnected_player_id);
+    }
+
+    void Log() const {
+        printf("[SC_DisconnectPacket] Type: %d, Size: %hu, DisconnectedPlayerID: %hu\n", type, size, disconnected_player_id);
+    }
+};
+```
+
+- **`disconnected_player_id`**: 서버가 관리하는 클라이언트 ID (0 ~ 2)입니다. 이 ID를 통해 각 클라이언트는 어떤 플레이어를 자신의 게임에서 제거해야 할지 알 수 있습니다.
+
+---
+
+## 4. 서버 측 구현 (`Server/ServerSystem.h`, `Server/ServerSystem.cpp`)
+
+### 4.1. `HandleDisconnect(int client_id)` 함수
+
+이 함수는 클라이언트 연결 종료 처리의 모든 책임을 가집니다. 특정 클라이언트 ID를 인자로 받아 다음 작업을 순차적으로 수행합니다.
+
+```cpp
+void ServerSystem::HandleDisconnect(int client_id)
+{
+    EnterCriticalSection(&m_cs); // 임계영역 시작 (m_clients 배열 보호)
+
+    // 1. 서버 로그에 기록
+    printf("[SERVER] 클라이언트 ID %d의 연결이 종료되었습니다.\n", client_id);
+
+    // 2. 소켓 정리 및 배열에서 제거
+    if (m_clients[client_id] != INVALID_SOCKET)
+    {
+        closesocket(m_clients[client_id]);
+        m_clients[client_id] = INVALID_SOCKET;
+    }
+    
+    // 3. 게임 상태 업데이트 (GameManager에 반영)
+    server_players[client_id].is_connected = false;
+
+    LeaveCriticalSection(&m_cs); // 임계영역 종료
+
+    // 4. 다른 모든 클라이언트에게 접속 종료 사실을 알림 (패킷 전송)
+    SC_DisconnectPacket packet(client_id);
+    packet.Encode();
+
+    for (int i = 0; i < MAX_PLAYERS; ++i) {
+        // 자기 자신과 이미 연결이 끊긴 클라이언트는 제외
+        if (i == client_id || m_clients[i] == INVALID_SOCKET) {
+            continue;
+        }
+        send(m_clients[i], (char*)&packet, sizeof(packet), 0);
+    }
+}
+```
+
+- **핵심 역할**: 소켓 리소스 정리, 서버의 플레이어 상태 업데이트, 그리고 다른 모든 클라이언트에게 상태 변화 전파.
+- **임계 영역**: `m_clients` 배열은 여러 스레드에서 접근할 수 있으므로, `EnterCriticalSection`과 `LeaveCriticalSection`으로 안전하게 보호합니다.
+
+### 4.2. 연결 종료 감지 및 `HandleDisconnect` 호출
+
+서버는 두 가지 경로로 클라이언트의 연결 종료를 감지하고 `HandleDisconnect`를 호출합니다.
+
+#### 1) 비정상 종료 감지 (`DoRecv` 함수)
+
+클라이언트의 게임이 강제 종료되거나 네트워크 연결이 끊어지면, 서버의 `recv()` 함수는 `0` 또는 `SOCKET_ERROR`를 반환합니다. `DoRecv` 함수는 이 반환값을 확인하여 비정상 종료를 감지하고 `HandleDisconnect`를 호출합니다.
+
+```cpp
+bool ServerSystem::DoRecv(int client_id)
+{
+    char buf[4096];
+    int len = recv(m_clients[client_id], buf, sizeof(buf), 0);
+
+    // recv()가 0 이하를 반환하면 클라이언트 연결이 끊겼다고 판단
+    if (len <= 0)
+    {
+        HandleDisconnect(client_id); // 클라이언트 종료 처리
+        return false; // 수신 스레드 종료
+    }
+
+    ProcessPacket(buf, client_id);
+    return true;
+}
+```
+
+#### 2) 정상 종료 감지 (`HandleEndSessionRequest` 함수)
+
+클라이언트가 정상적으로 게임을 종료하면 `CS_EndSessionRequestPacket`을 서버로 보냅니다. 서버는 이 패킷을 수신하여 기존의 소켓 정리 로직 대신, 이제 `HandleDisconnect` 함수를 호출하도록 단순화되었습니다.
+
+```cpp
+void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, int client_id)
+{
+    if (packet->player_id != client_id)
+        printf("[Warning] Packet ID mismatch.\n");
+
+    // HandleDisconnect 함수가 모든 정리 작업을 수행하므로 여기서는 호출만 합니다.
+    HandleDisconnect(client_id);
+}
+```
+
+---
+
+## 5. 클라이언트 측 구현 (`Game/ClientSystem.cpp`)
+
+### `ProcessPacket` 함수 내 `SC_DISCONNECT` 처리
+
+클라이언트는 서버로부터 `SC_DisconnectPacket`을 수신하면, `ProcessPacket` 함수 내의 `switch` 문을 통해 이를 처리합니다.
+
+```cpp
+void ClientSystem::ProcessPacket(char* packet_buf) {
+    BasePacket* base_p = (BasePacket*)packet_buf;
+    
+    switch (base_p->type) {
+        // ... (기존 다른 패킷 처리)
+
+        case SC_DISCONNECT: {
+            SC_DisconnectPacket* p = (SC_DisconnectPacket*)packet_buf;
+            p->Decode();
+
+            if (p->disconnected_player_id >= 0 && p->disconnected_player_id < 3) {
+                // 로컬 게임 상태 업데이트: 해당 플레이어를 비활성화
+                players[p->disconnected_player_id].is_connected = false;
+                printf("[Info] Player %hu disconnected.\n", p->disconnected_player_id);
+            } else {
+                printf("[Warning] Received SC_DISCONNECT with invalid player ID: %hu\n", p->disconnected_player_id);
+            }
+            break;
+        }
+        
+        default: {
+            // ...
+        }
+    }
+}
+```
+
+- **역할**: 패킷에서 접속 종료된 플레이어의 ID를 얻은 후, 클라이언트가 자체적으로 관리하는 `players` 배열의 `is_connected` 플래그를 `false`로 설정합니다.
+- **결과**: `is_connected` 플래그가 `false`가 되면, 클라이언트의 메인 게임 루프는 더 이상 해당 플레이어를 화면에 그리거나 관련 로직을 처리하지 않게 됩니다.
+
+---
+
+## 6. 전체 흐름 요약
+
+1.  **연결 종료 발생**: 클라이언트 A가 정상/비정상적으로 연결을 종료합니다.
+2.  **서버 감지**: 서버는 `recv()` 실패 또는 `CS_EndSessionRequestPacket` 수신을 통해 이를 감지합니다.
+3.  **서버 처리**: 서버는 `HandleDisconnect(A의 ID)`를 호출하여 A의 리소스를 정리하고, 플레이어 상태를 `is_connected = false`로 변경합니다.
+4.  **서버 전파**: 서버는 `SC_DisconnectPacket(A의 ID)`을 생성하여 나머지 모든 클라이언트(B, C, ...)에게 브로드캐스팅합니다.
+5.  **클라이언트 수신**: 클라이언트 B는 `SC_DisconnectPacket`을 수신합니다.
+6.  **클라이언트 상태 동기화**: 클라이언트 B는 자신의 `players` 배열에서 A의 `is_connected` 상태를 `false`로 변경하여 게임 월드에서 A를 제거합니다.
+
+이로써 모든 클라이언트의 게임 상태가 동기화됩니다.

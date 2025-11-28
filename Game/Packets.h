@@ -592,6 +592,38 @@ public:
     }
 };
 
+// [S->C] 다른 플레이어의 접속 종료를 알리는 패킷
+class SC_DisconnectPacket : public BasePacket {
+public:
+    u_short disconnected_player_id; // 접속 종료한 플레이어의 ID
+
+    SC_DisconnectPacket() {
+        size = sizeof(SC_DisconnectPacket);
+        type = SC_DISCONNECT;
+        disconnected_player_id = (u_short)-1;
+    }
+
+    SC_DisconnectPacket(u_short id) {
+        size = sizeof(SC_DisconnectPacket);
+        type = SC_DISCONNECT;
+        disconnected_player_id = id;
+    }
+
+    void Encode() {
+        size = htons(size);
+        disconnected_player_id = htons(disconnected_player_id);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        disconnected_player_id = ntohs(disconnected_player_id);
+    }
+
+    void Log() const {
+        printf("[SC_DisconnectPacket] Type: %d, Size: %hu, DisconnectedPlayerID: %hu\n", type, size, disconnected_player_id);
+    }
+};
+
 // [S->C] 실시간 게임 상태 동기화 패킷
 class SC_GameStatePacket : public BasePacket {
 public:

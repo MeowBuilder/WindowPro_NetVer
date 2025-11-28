@@ -137,7 +137,10 @@ bool ServerSystem::DoRecv(int client_id)
     int len = recv(m_clients[client_id], buf, sizeof(buf), 0);
 
     if (len <= 0)
-        return false; // 클라이언트 종료
+    {
+        HandleDisconnect(client_id); // 클라이언트 종료 처리
+        return false;
+    }
 
     ProcessPacket(buf, client_id);
     return true;
@@ -263,15 +266,8 @@ void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, i
     if (packet->player_id != client_id)
         printf("[Warning] Packet ID mismatch.\n");
 
-    EnterCriticalSection(&m_cs);
-
-    if (m_clients[client_id] != INVALID_SOCKET)
-    {
-        closesocket(m_clients[client_id]);
-        m_clients[client_id] = INVALID_SOCKET;
-    }
-
-    LeaveCriticalSection(&m_cs);
+    // HandleDisconnect 함수가 모든 정리 작업을 수행하므로 여기서는 호출만 합니다.
+    HandleDisconnect(client_id);
 }
 
 #pragma endregion
@@ -446,6 +442,44 @@ bool ServerSystem::BroadcastGameState()
     }
     return true;
 }
+
+#pragma endregion
+
+#pragma region Disconnect Handling
+
+void ServerSystem::HandleDisconnect(int client_id)
+{
+    EnterCriticalSection(&m_cs); // 임계영역 시작
+
+    // 1. 서버 로그에 기록
+    printf("[SERVER] 클라이언트 ID %d의 연결이 종료되었습니다.\n", client_id);
+
+    // 2. 소켓 정리 및 배열에서 제거
+    if (m_clients[client_id] != INVALID_SOCKET)
+    {
+        closesocket(m_clients[client_id]);
+        m_clients[client_id] = INVALID_SOCKET;
+    }
+    
+    // 3. 게임 상태 업데이트 (GameManager에 반영)
+    server_players[client_id].is_connected = false;
+
+    LeaveCriticalSection(&m_cs); // 임계영역 종료
+
+    // 4. 다른 모든 클라이언트에게 접속 종료 사실을 알림 (패킷 전송)
+    SC_DisconnectPacket packet(client_id);
+    packet.Encode();
+
+    for (int i = 0; i < MAX_PLAYERS; ++i) {
+        // 자기 자신과 연결되지 않은 클라이언트와 유효하지 않은 소켓은 제외하고 모든 클라이언트에게 전송
+        if (i == client_id || m_clients[i] == INVALID_SOCKET) {
+            continue;
+        }
+        send(m_clients[i], (char*)&packet, sizeof(packet), 0);
+    }
+}
+
+#pragma endregion
 
 void ServerSystem::Make_Defalt_Map()
 {

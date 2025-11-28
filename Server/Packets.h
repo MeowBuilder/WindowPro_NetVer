@@ -11,8 +11,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
-#include "GameManager.h"
 
+#include "GameManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
 // --- 패킷 타입 정의 ---
@@ -589,6 +589,38 @@ public:
 
     void Log() const {
         printf("[SC_EventPacket] Type: %d, Size: %hu, EventType: %d\n", type, size, event_type);
+    }
+};
+
+// [S->C] 다른 플레이어의 접속 종료를 알리는 패킷
+class SC_DisconnectPacket : public BasePacket {
+public:
+    u_short disconnected_player_id; // 접속 종료한 플레이어의 ID
+
+    SC_DisconnectPacket() {
+        size = sizeof(SC_DisconnectPacket);
+        type = SC_DISCONNECT;
+        disconnected_player_id = (u_short)-1;
+    }
+
+    SC_DisconnectPacket(u_short id) {
+        size = sizeof(SC_DisconnectPacket);
+        type = SC_DISCONNECT;
+        disconnected_player_id = id;
+    }
+
+    void Encode() {
+        size = htons(size);
+        disconnected_player_id = htons(disconnected_player_id);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        disconnected_player_id = ntohs(disconnected_player_id);
+    }
+
+    void Log() const {
+        printf("[SC_DisconnectPacket] Type: %d, Size: %hu, DisconnectedPlayerID: %hu\n", type, size, disconnected_player_id);
     }
 };
 
