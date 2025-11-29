@@ -44,6 +44,7 @@ private:
     void HandleAssignID(SC_AssignIDPacket* packet);
     void HandleEvent(SC_EventPacket* packet);
     void HandleMapInfo(SC_MapInfoPacket* packet);
+    void HandleGameState(SC_GameStatePacket* packet);
 
     // 스레드 함수
     static DWORD WINAPI ClientRecvThread(LPVOID lpParam);

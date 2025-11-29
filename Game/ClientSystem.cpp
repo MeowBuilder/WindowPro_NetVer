@@ -113,6 +113,13 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandleMapInfo(p);
             break;
         }
+        case SC_GAME_STATE: {
+            SC_GameStatePacket* p = (SC_GameStatePacket*)packet_buf;
+            p->Decode(); // 네트워크 바이트 순서에서 호스트 바이트 순서로 변환
+            //p->Log();    // 너무 자주 호출되므로 주석 처리
+            HandleGameState(p);
+            break;
+        }
         case SC_DISCONNECT: {
             SC_DisconnectPacket* p = (SC_DisconnectPacket*)packet_buf;
             p->Decode();
@@ -155,6 +162,51 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
             printf("Unknown Event Type: %d\n", packet->event_type);
             break;
     }
+}
+
+void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
+    // 1. 플레이어 상태 업데이트
+    for (int i = 0; i < 3; ++i) {
+        // 내 캐릭터는 직접 조작하므로 서버의 정보로 덮어쓰지 않음
+        if (i == my_player_id) {
+            continue;
+        }
+
+        players[i].is_connected = packet->players[i].is_connected;
+        if (players[i].is_connected) {
+            players[i].x = packet->players[i].pos.x;
+            players[i].y = packet->players[i].pos.y;
+            players[i].player_life = packet->players[i].life;
+            players[i].Walk_state = packet->players[i].walk_state;
+            players[i].Jump_state = packet->players[i].jump_state;
+            players[i].frame_counter = packet->players[i].frame_counter;
+            // players[i].dir = packet->players[i].dir; // dir enum이 달라서 일단 주석처리
+        }
+    }
+
+    EnterCriticalSection(&m_map_cs);
+
+    // 2. 적 상태 업데이트
+    for (int i = 0; i < m_map.enemy_count; ++i) {
+        m_map.enemys[i].is_alive = packet->enemies[i].is_alive;
+        if (m_map.enemys[i].is_alive) {
+            m_map.enemys[i].x = packet->enemies[i].pos.x;
+            m_map.enemys[i].y = packet->enemies[i].pos.y;
+            m_map.enemys[i].direction = packet->enemies[i].dir;
+            m_map.enemys[i].move_state = packet->enemies[i].move_state;
+        }
+    }
+
+    // 3. 보스 상태 업데이트
+    if (m_map.boss_count > 0) {
+        m_map.boss.x = packet->boss.pos.x;
+        m_map.boss.y = packet->boss.pos.y;
+        m_map.boss.life = packet->boss.life;
+        m_map.boss.attack_time = packet->boss.attack_time;
+        // m_map.boss.dir = packet->boss.dir; // boss 구조체에 dir 없음
+    }
+
+    LeaveCriticalSection(&m_map_cs);
 }
 
 void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
