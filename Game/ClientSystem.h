@@ -22,7 +22,7 @@ public:
     bool SendEndSessionRequestPacket();
     Map GetMap();
 
-    Player getPlayer(int player_id) { return players[player_id]; };
+    Player* getPlayer(int player_id) { return &players[player_id]; };
 
     // 게임 상태
     u_short my_player_id;

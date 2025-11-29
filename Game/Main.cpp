@@ -25,6 +25,9 @@ LPCTSTR lpszWindowName = L"����";
 
 ClientSystem client;
 
+HBITMAP g_hFullMapBitmap = NULL; // 전체 맵을 그릴 공유 비트맵
+RECT g_MapRect = { 0, 0, 1920, 1080 }; // 맵 전체 크기 (Desk_rect와 동일하게 관리)
+
 enum DrawMod {
 	D_Block, D_Spike, D_Flag, D_Enemy, D_Boss, D_player
 };
@@ -372,19 +375,21 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
-	Player hPlayer;
+	Player* hPlayer;
 	hPlayer = client.getPlayer(1);
 	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
 	{
 	case 1:
+		hPlayer->x++; //테스트용 실제 충돌처리는 서버에서 진행
+
 		if (window_move)
 		{
-			MoveWindow(hWnd, std::clamp(hPlayer.x - (wnd_rt.right / 2), (long)0, (long)Desk_rect.right - (wnd_rt.right)), hPlayer.y - (wnd_rt.bottom / 2), 320, 320, true);
+			MoveWindow(hWnd, std::clamp(hPlayer->x - (wnd_rt.right / 2), (long)0, (long)Desk_rect.right - (wnd_rt.right)), hPlayer->y - (wnd_rt.bottom / 2), 320, 320, true);
 		}
 		else
 		{
-			MoveWindow(hWnd, window_rect.left, hPlayer.y - (wnd_rt.bottom / 2), 320, 320, true);
+			MoveWindow(hWnd, window_rect.left, hPlayer->y - (wnd_rt.bottom / 2), 320, 320, true);
 		}
 	default:
 		break;
@@ -393,82 +398,63 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 }
 
 LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
-	HDC hdc, mdc, resourcedc;
-	HBITMAP hBitmap;
-	static HBITMAP Character_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap, Tino_bitmap;
+	HDC hdc, mdc;
 	PAINTSTRUCT ps;
 	static RECT Desk_rect;
 
-	Player hPlayer;
+	Player* hPlayer;
 	hPlayer = client.getPlayer(1);
 	static int x, y;
 	switch (iMsg) {
 	case WM_CREATE:
-		result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
-		if (result != FMOD_OK)
-			exit(0);
-		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
-		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
-		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
-		ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3�� ���� ���� �� ����
+		//result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
+		//if (result != FMOD_OK)
+		//	exit(0);
+		//ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
+		//ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
+		//ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
+		//ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3);
+		//channel->stop();
+		//ssystem->playSound(sound1, 0, false, &channel);
 
-
-		channel->stop();
-		ssystem->playSound(sound1, 0, false, &channel);
 		srand(time(NULL));
-		Character_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP4));
-		Enemy_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP1));
-		Enemy_rv_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP14));
-		Object_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP2));
-		Platforms_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP3));
-		BGM_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP10));
-		BGN_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP11));
-		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
+
 		GetWindowRect(GetDesktopWindow(), &Desk_rect);
-		window_move = true;
-		player.player_life = 3;
 
 		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc2);
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
-		mdc = CreateCompatibleDC(hdc);
-		resourcedc = CreateCompatibleDC(hdc);
-		hBitmap = CreateCompatibleBitmap(hdc, Desk_rect.right, Desk_rect.bottom);
-		SelectObject(mdc, hBitmap);
-		Rectangle(mdc, -1, -1, Desk_rect.right, Desk_rect.bottom);
-		GetWindowRect(hWnd, &window_rect);
 
-		if (map.boss_count != 0)
-		{
-			SelectObject(resourcedc, BGN_bitmap);
-			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
+		// 1. 이미 그려진 전역 비트맵이 있는지 확인
+		if (g_hFullMapBitmap) {
+			mdc = CreateCompatibleDC(hdc);
+
+			// 2. 전역 비트맵을 선택 (읽기 모드)
+			HBITMAP hOldBitmap = (HBITMAP)SelectObject(mdc, g_hFullMapBitmap);
+
+			// 3. 현재 이 윈도우의 위치 가져오기
+			GetWindowRect(hWnd, &window_rect);
+			GetClientRect(hWnd, &wnd_rt);
+
+			// 4. 전역 비트맵에서 내 윈도우 위치에 해당하는 부분만 가져와서 그리기
+			// window_rect.left, top은 전체 화면(맵) 기준의 좌표라고 가정
+			BitBlt(hdc, 0, 0, wnd_rt.right, wnd_rt.bottom,
+				mdc, window_rect.left, window_rect.top, SRCCOPY);
+
+			// 정리
+			SelectObject(mdc, hOldBitmap);
+			DeleteDC(mdc);
 		}
-		else
-		{
-			SelectObject(resourcedc, BGM_bitmap);
-			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
+		else {
+			// 아직 메인 윈도우가 비트맵을 안 만들었으면 흰색 등으로 채움
+			Rectangle(hdc, 0, 0, 320, 320);
 		}
 
-
-		Player_Draw(&mdc, &resourcedc, Tino_bitmap, hPlayer);
-
-		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
-
-		BitBlt(hdc, 0, 0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
-		DeleteDC(mdc);
-		DeleteDC(resourcedc);
-		DeleteObject(hBitmap);
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
-		DeleteObject(Character_bitmap);
-		DeleteObject(Enemy_bitmap);
-		DeleteObject(Object_bitmap);
-		DeleteObject(Platforms_bitmap);
-		DeleteObject(BGM_bitmap);
-		DeleteObject(BGN_bitmap);
-		ssystem->release();
+		//ssystem->release();
 		break;
 	}
 	return DefWindowProc(hWnd, iMsg, wParam, lParam);
@@ -477,7 +463,7 @@ LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam
 
 LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	HDC hdc, mdc, resourcedc;
-	HBITMAP hBitmap;
+	HBITMAP hOldBitmap;
 	static HBITMAP Character_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap,Tino_bitmap;
 	PAINTSTRUCT ps;
 	static RECT Desk_rect;
@@ -487,8 +473,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	switch (iMsg) {
 	case WM_CREATE:
 		result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
-		if (result != FMOD_OK)
-			exit(0);
+		if (result != FMOD_OK) exit(0);
 		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
 		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
 		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
@@ -506,9 +491,17 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		BGM_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP10));
 		BGN_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP11));
 		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
-		GetWindowRect(GetDesktopWindow(), &Desk_rect);
+
 		window_move = true;
 		player.player_life = 3;
+
+		// Desk_rect 초기화
+		Desk_rect = { 0,0,1920,1080 };
+
+		// [수정] 전역 비트맵 생성 (한 번만 생성하거나 크기가 바뀔 때 재생성)
+		hdc = GetDC(hWnd);
+		g_hFullMapBitmap = CreateCompatibleBitmap(hdc, Desk_rect.right, Desk_rect.bottom);
+		ReleaseDC(hWnd, hdc);
 
 		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc);
 		break;
@@ -550,7 +543,6 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		default:
 			break;
 		}
-		InvalidateRect(hWnd, NULL, false);
 		break;
 	case WM_KEYUP:
 		switch (wParam) {
@@ -565,7 +557,6 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		default:
 			break;
 		}
-		InvalidateRect(hWnd, NULL, false);
 		break;
 	case WM_CHAR:
 		switch (wParam)
@@ -588,32 +579,44 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		hdc = BeginPaint(hWnd, &ps);
 		mdc = CreateCompatibleDC(hdc);
 		resourcedc = CreateCompatibleDC(hdc);
-		hBitmap = CreateCompatibleBitmap(hdc, Desk_rect.right, Desk_rect.bottom);
-		SelectObject(mdc, hBitmap);
-		Rectangle(mdc, -1, -1, Desk_rect.right, Desk_rect.bottom);
-		GetWindowRect(hWnd, &window_rect);
 
-		if (map.boss_count != 0)
-		{
+		hOldBitmap = (HBITMAP)SelectObject(mdc, g_hFullMapBitmap);
+
+		// 1. 배경 초기화
+		Rectangle(mdc, -1, -1, Desk_rect.right + 1, Desk_rect.bottom + 1);
+		GetWindowRect(hWnd, &window_rect); // 현재 윈도우 위치
+
+		// 2. 배경 이미지 그리기
+		if (map.boss_count != 0) {
 			SelectObject(resourcedc, BGN_bitmap);
 			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
 		}
-		else
-		{
+		else {
 			SelectObject(resourcedc, BGM_bitmap);
 			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
 		}
 
+		// 3. 플레이어들 그리기 (내 캐릭터 + 다른 플레이어들)
+		// Player_Draw 함수가 mdc에 그리도록 되어 있으므로 순서대로 호출
+		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);           // 나
+		Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(1)); // 플레이어 2
+		// Player_Draw(&mdc, &resourcedc, Tino_bitmap, client.getPlayer(2)); // 플레이어 3 (필요시)
 
-		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);
-
+		// 4. 맵 오브젝트 그리기
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
 
-		BitBlt(hdc, 0,0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
+		// 5. [출력] mdc(전역 비트맵)의 내용을 실제 화면(hdc)으로 복사
+		// 윈도우가 맵의 일부만 보여주는 카메라 역할을 한다면 window_rect 좌표를 사용
+		BitBlt(hdc, 0, 0, wnd_rt.right, wnd_rt.bottom, mdc, window_rect.left, window_rect.top, SRCCOPY);
+
+		// 정리
+		SelectObject(mdc, hOldBitmap); // 비트맵 해제 (그래야 다른 DC에서 선택 가능)
 		DeleteDC(mdc);
 		DeleteDC(resourcedc);
-		DeleteObject(hBitmap);
+
+		// 주의: g_hFullMapBitmap은 여기서 지우지 않습니다! (전역 변수이므로)
 		EndPaint(hWnd, &ps);
+
 		break;
 	case WM_DESTROY:
 		DeleteObject(Character_bitmap);
@@ -622,6 +625,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		DeleteObject(Platforms_bitmap);
 		DeleteObject(BGM_bitmap);
 		DeleteObject(BGN_bitmap);
+		if (g_hFullMapBitmap) DeleteObject(g_hFullMapBitmap);
 		ssystem->release();
 		break;
 	}
