@@ -86,8 +86,7 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
     g_hinst = hInstance;
 	Clear = false;
 	selected_map = 0;
-	Desk_rect = { 0,0,1920,1080 }; // 여기 바꾸면 맵 전체 사이즈 변경
-	//GetWindowRect(GetDesktopWindow(), &Desk_rect);
+	Desk_rect = { 0,0,1920,1080 };
 
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -319,12 +318,9 @@ void CreateGameWindow2(HINSTANCE hInstance) {
 	RegisterClassEx(&WndClass);
 
 	// 메인 게임 윈도우와 겹치지 않도록 위치와 크기를 조정할 수 있습니다.
-	hWnd = CreateWindow(L"GameWindow2", L"Other Player", WS_CAPTION | WS_SYSMENU, 950, 50, 320, 320, NULL, NULL, hInstance, NULL);
+	hWnd = CreateWindow(L"GameWindow2", L"Other Player", WS_CAPTION, 950, 50, 320, 320, NULL, NULL, hInstance, NULL);
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
-
-	// ★ 메시지 루프는 제거해야 합니다. (위의 1번 섹션 참고)
-	// 이 함수는 윈도우를 생성하고 제어를 메인 루프에 반환합니다.
 }
 
 void CloseEditWindow(HWND hEditWnd) {
@@ -335,8 +331,8 @@ void CloseEditWindow(HWND hEditWnd) {
 	}
 }
 
-int width = GetSystemMetrics(SM_CXSCREEN);
-int height = GetSystemMetrics(SM_CYSCREEN);
+int width = 1920;
+int height = 1080;
 
 void CreateEditWindow(HINSTANCE hInstance) {
 	HWND hWnd;
@@ -400,7 +396,6 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	HDC hdc, mdc;
 	PAINTSTRUCT ps;
-	static RECT Desk_rect;
 
 	Player* hPlayer;
 	hPlayer = client.getPlayer(1);
@@ -418,8 +413,6 @@ LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam
 		//ssystem->playSound(sound1, 0, false, &channel);
 
 		srand(time(NULL));
-
-		GetWindowRect(GetDesktopWindow(), &Desk_rect);
 
 		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc2);
 		break;
@@ -466,7 +459,6 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	HBITMAP hOldBitmap;
 	static HBITMAP Character_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap,Tino_bitmap;
 	PAINTSTRUCT ps;
-	static RECT Desk_rect;
 
 	static int x, y;
 
@@ -634,13 +626,10 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	RECT temp_rt;
-	RECT Desk_rect;
 	int randomnum;
 
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
-	//GetWindowRect(GetDesktopWindow(), &Desk_rect);
-	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
 	{
 	case 1://�÷��̾� �̵� �� �浹
@@ -988,7 +977,6 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 	HBITMAP hBitmap;
 	static HBITMAP Character_bitmap, Enemy_bitmap, Object_bitmap, Platforms_bitmap, BGM_bitmap, BGN_bitmap, Tino_bitmap, Enemy_rv_bitmap;
 	PAINTSTRUCT ps;
-	static RECT Desk_rect;
 
 	static DrawMod curDrawmod;
 
@@ -1009,7 +997,6 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		BGM_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP10));
 		BGN_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP11));
 		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
-		GetWindowRect(GetDesktopWindow(), &Desk_rect);
 		down = false;
 		curDrawmod = D_Block;
 		break;

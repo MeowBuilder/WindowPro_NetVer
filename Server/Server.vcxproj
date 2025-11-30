@@ -139,10 +139,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Game\GameManager.h" />
+    <ClInclude Include="Player&amp;Enemy.h" />
     <ClInclude Include="ServerSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Game\GameManager.cpp" />
+    <ClCompile Include="Player&amp;Enemy.cpp" />
     <ClCompile Include="ServerMain.cpp" />
     <ClCompile Include="ServerSystem.cpp" />
   </ItemGroup>
