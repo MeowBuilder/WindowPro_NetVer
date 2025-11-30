@@ -133,7 +133,7 @@ void ServerSystem::StartRecvThread(int client_id)
 // 실제 수신 처리 (recv → ProcessPacket)
 bool ServerSystem::DoRecv(int client_id)
 {
-    char buf[4096];
+    char buf[12000];
     int len = recv(m_clients[client_id], buf, sizeof(buf), 0);
 
     if (len <= 0)
@@ -196,8 +196,14 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
     // 서버 authoritative 맵 갱신
     server_map[now_map] = packet->UploadMap;
 
-    // 성공 응답
-    SendMapUploadResponsePacket(client_id, true);
+    // 성공 응답 2025.11.30 추가함
+    for (int i = 0; i < MAX_PLAYERS; i++)
+    {
+        if (m_clients[i] != INVALID_SOCKET)
+        {
+            SendMapUploadResponsePacket(i, true);
+        }
+    }
 
     // 모든 클라이언트에게 MAP INFO 전송
    // BroadcastMapInfo();

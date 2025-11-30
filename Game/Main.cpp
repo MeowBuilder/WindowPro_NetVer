@@ -43,11 +43,15 @@ bool window_move;
 
 bool Clear;
 
+int width = 1920;
+int height = 1080;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
-void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
+void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 
 LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
+void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 void CreateGameWindow(HINSTANCE hInstance);
 void CreateGameWindow2(HINSTANCE hInstance);
 void CloseGameWindow(HWND hGameWnd);
@@ -106,8 +110,6 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
         return 1;
     }
 
-
-	
 	HWND hWnd = CreateWindow(L"WindowClass", L"WindowPro", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
@@ -128,7 +130,6 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-
 	CS_StartSessionRequestPacket SSRP(0);
 	static HBITMAP Title_bitmap, Clear_bitmap, Start_bitmap, Exit_bitmap, Edit_bitmap;
 	static RECT Client_rect;
@@ -158,12 +159,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 		client.Connect("127.0.0.1", 9000);
 		client.StartRecvThread();
+
+		SetTimer(hWnd, 0, 0.016, (TIMERPROC)StartTimer);
 		break;
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
 		switch (wmId) {
 		case 1:
+			if (client.my_player_id != 0) break;
 			channel->stop();
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
@@ -173,14 +177,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			client.SendStartSessionRequestPacket(&SSRP);
 
 			selected_map = 0;
-			//map = init_map(Desk_rect, &player, selected_map);
 			map = client.GetMap();
 			player = Make_Player(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
 
 			CreateGameWindow(g_hinst);
 			CreateGameWindow2(g_hinst);
+			//CreateGameWindow3(g_hinst);
 			break;
-		case 2: // ���� ���� ��ư
+		case 2:
 			channel->stop();
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
@@ -194,6 +198,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			PostQuitMessage(0);
 			break;
 		case 3:
+			if (client.my_player_id != 0) break;
 			channel->stop();
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
@@ -249,6 +254,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
+
+void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
+	if (client.StartGame)
+	{
+		ShowWindow(hWnd, SW_HIDE);
+
+		map = client.GetMap();
+		player = Make_Player(map.P_Start_Loc[client.my_player_id].x, map.P_Start_Loc[client.my_player_id].y);
+
+		CreateGameWindow(g_hinst);
+		CreateGameWindow2(g_hinst);
+		client.StartGame = false;
+	}
+}
+
 void CloseGameWindow(HWND hGameWnd) {
 	HWND hTitleWnd = FindWindow(L"WindowClass", NULL);
 
@@ -264,8 +284,8 @@ void CloseGameWindow(HWND hGameWnd) {
 		DestroyWindow(hOtherPlayerWnd);
 	}
 
-	UnregisterClass(L"GameWindow", g_hinst);
-	UnregisterClass(L"GameWindow2", g_hinst);
+	//UnregisterClass(L"GameWindow", g_hinst);
+	//UnregisterClass(L"GameWindow2", g_hinst);
 
 	// 타이틀 윈도우 다시 표시
 	if (hTitleWnd) {
@@ -330,9 +350,6 @@ void CloseEditWindow(HWND hEditWnd) {
 		ShowWindow(hTitleWnd, SW_SHOW);
 	}
 }
-
-int width = 1920;
-int height = 1080;
 
 void CreateEditWindow(HINSTANCE hInstance) {
 	HWND hWnd;
@@ -498,6 +515,10 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc);
 		break;
 	case WM_KEYDOWN:
+		if (client.my_player_id != 0)
+		{
+			break;
+		}
 		switch (wParam) {
 		case VK_CONTROL:
 			window_move = !window_move;
@@ -632,11 +653,10 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	GetWindowRect(hWnd, &window_rect);
 	switch (idEvent)
 	{
-	case 1://�÷��̾� �̵� �� �浹
-		
+	case 1:
 		Player_Move(&player, window_rect);
 
-		if (!IntersectRect(&temp_rt, &player.player_rt, &Desk_rect))//�� ������ ������
+		if (!IntersectRect(&temp_rt, &player.player_rt, &Desk_rect))
 		{
 			player.x = map.P_Start_Loc[0].x;
 			player.y = map.P_Start_Loc[0].y;
@@ -648,22 +668,21 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 
 		if (player.player_life <= 0) {
-			CloseGameWindow(hWnd); // Ÿ��Ʋ ȭ������ ���ư�.
+			CloseGameWindow(hWnd);
 		}
 
-		//���� �浹 ����
 		for (int i = 0; i < map.block_count; i++)
 		{
-			if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)//�÷��̾ Ư�������� x�ȿ� �ִٸ�
+			if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)
 			{
-				if (player.y + Size > map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)//����
+				if (player.y + Size > map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)
 				{
 					player.y = map.blocks[i].Block_rt.top - Size;
 					player.jump_count = 2;
 					player.is_in_air = false;
 					player.DOWN = false;
 				}
-				else if (player.y - Size > map.blocks[i].y && player.y - Size < map.blocks[i].Block_rt.bottom)//�Ʒ�
+				else if (player.y - Size > map.blocks[i].y && player.y - Size < map.blocks[i].Block_rt.bottom)
 				{
 					player.y = map.blocks[i].Block_rt.bottom + Size;
 					player.is_in_air = true;
@@ -671,9 +690,9 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.UP = false;
 				}
 			}
-			else if (player.y <= map.blocks[i].Block_rt.bottom && player.y >= map.blocks[i].Block_rt.top)//�÷��̾ Ư�������� y�ȿ� �ִٸ�
+			else if (player.y <= map.blocks[i].Block_rt.bottom && player.y >= map.blocks[i].Block_rt.top)
 			{
-				if (player.x - Size < map.blocks[i].Block_rt.right && player.x - Size > map.blocks[i].x)//������
+				if (player.x - Size < map.blocks[i].Block_rt.right && player.x - Size > map.blocks[i].x)
 				{
 					player.UP = false;
 					player.x = map.blocks[i].Block_rt.right + Size;
@@ -695,23 +714,22 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			
 		}
 
-		//������Ʈ �浹 ����
 		for (int i = 0; i < map.object_count; i++)
 		{
 			if (IntersectRect(&temp_rt,&player.player_rt,&map.objects[i].Obj_rt))
 			{
 				switch (map.objects[i].obj_type)
 				{
-				case Spike://���� �浹
+				case Spike:
 					player.x = map.P_Start_Loc[0].x;
 					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
 					window_move = true;
 
-					player.player_life--; // ��� ����
+					player.player_life--;
 					break;
-				case Flag://�������� �浹
+				case Flag:
 					if (selected_map == 99)
 					{
 						selected_map = 0;
@@ -732,7 +750,6 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			}
 		}
 
-		//�� �浹 ����
 		for (int i = 0; i < map.enemy_count; i++)
 		{
 			if (map.enemys[i].is_alive)
@@ -750,13 +767,12 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 						player.is_in_air = false;
 						window_move = true;
 
-						player.player_life--; // ��� ����
+						player.player_life--;
 					}
 				}
 			}
 		}
 		
-		//�� ������
 		for (int i = 0; i < map.enemy_count; i++)
 		{
 			Move_Enemy(&map.enemys[i], map.blocks[map.enemys[i].on_block], 3);
@@ -773,10 +789,9 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		}
 
 		
-		//������
 		if (map.boss_count != 0)
 		{
-			if (map.boss.attack_time <= 0)//���� �ֱ⸶�� ���� ����
+			if (map.boss.attack_time <= 0)
 			{
 				switch (map.boss.life)
 				{
@@ -855,15 +870,15 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.is_in_air = false;
 					window_move = true;
 
-					player.player_life--; // ��� ����
+					player.player_life--;
 				}
 			}
 
 			for (int i = 0; i < map.block_count; i++)
 			{
-				if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)//�÷��̾ Ư�������� x�ȿ� �ִٸ�
+				if (player.x <= map.blocks[i].Block_rt.right && player.x >= map.blocks[i].Block_rt.left)
 				{
-					if (player.y + Size >= map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)//����
+					if (player.y + Size >= map.blocks[i].Block_rt.top && player.y + Size < map.blocks[i].y)
 					{
 						player.x--;
 					}
@@ -910,6 +925,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			map.P_Start_Loc[0].x = map.blocks[0].x;
 			map.P_Start_Loc[0].y = map.blocks[0].Block_rt.top - Size;
 		}
+
+		client.SendPlayerUpdatePacket(&player);
 		break;
 	default:
 		break;
@@ -999,6 +1016,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
 		down = false;
 		curDrawmod = D_Block;
+		SetTimer(hWnd, 0, 0.016, (TIMERPROC)StartTimer);
 		break;
 	case WM_LBUTTONDOWN:
 		if (client.my_player_id != 0) break;
@@ -1043,6 +1061,12 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		case D_player:
 			Editmap.P_Start_Loc[0].x = start_x;
 			Editmap.P_Start_Loc[0].y = start_y;
+
+			Editmap.P_Start_Loc[1].x = start_x;
+			Editmap.P_Start_Loc[1].y = start_y;
+
+			Editmap.P_Start_Loc[2].x = start_x;
+			Editmap.P_Start_Loc[2].y = start_y;
 			player = Make_Player(Editmap.P_Start_Loc[0].x, Editmap.P_Start_Loc[0].y);
 			break;
 		default:
@@ -1130,16 +1154,13 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 		if (client.my_player_id != 0) break;
 		switch (wParam)
 		{
-		case 's': case 'S': //�׽�Ʈ
+		case 's': case 'S':
 			map = Editmap;
 			selected_map = 99;
 			CloseEditWindow(hWnd);
 
-			// ������ �� ���� ����
 			UMP.Init(map);
 			client.SendUploadMapPacket(&UMP);
-
-			CreateGameWindow(g_hinst);
 			break;
 		case '1':
 			curDrawmod = D_Block;

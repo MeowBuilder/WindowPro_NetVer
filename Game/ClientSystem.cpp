@@ -6,6 +6,7 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("[Error] WSAStartup() failed\n");
     }
+    StartGame = false;
     InitializeCriticalSection(&m_map_cs);
     maprecvEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
@@ -133,6 +134,13 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             }
             break;
         }
+        case SC_MAP_UPLOAD_RSP: {
+            SC_MapUploadResponsePacket* p = (SC_MapUploadResponsePacket*)packet_buf;
+            p->Decode();
+            // p->Log(); // 디버깅용, 필요시 활성화
+            HandleMapUploadResponse(p);
+            break;
+        }
         // 다른 패킷 처리 케이스를 여기에 추가
         default: {
             printf("[Warning] Received unknown packet type: %d\n", base_p->type);
@@ -220,6 +228,16 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
     SetEvent(maprecvEvent);
 }
 
+void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
+{
+
+    if (packet->is_success)
+    {
+        StartGame = true;
+    }
+}
+
+
 Map ClientSystem::GetMap()
 {
     Map temp_map;
@@ -230,8 +248,8 @@ Map ClientSystem::GetMap()
     temp_map = m_map;
 
     players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
-    players[1] = Make_Player(temp_map.P_Start_Loc[0].x + 200, temp_map.P_Start_Loc[0].y - 100);
-    players[2] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
+    players[1] = Make_Player(temp_map.P_Start_Loc[1].x, temp_map.P_Start_Loc[1].y);
+    players[2] = Make_Player(temp_map.P_Start_Loc[2].x, temp_map.P_Start_Loc[2].y);
     LeaveCriticalSection(&m_map_cs);
 
     return temp_map;

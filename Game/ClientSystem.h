@@ -26,6 +26,7 @@ public:
 
     // 게임 상태
     u_short my_player_id;
+    bool StartGame;
 private:
     // 네트워크
     SOCKET sock;
@@ -38,12 +39,14 @@ private:
 
     Player players[3];
 
+
     // 패킷 처리
     bool DoRecv();
     void ProcessPacket(char* packet);
     void HandleAssignID(SC_AssignIDPacket* packet);
     void HandleEvent(SC_EventPacket* packet);
     void HandleMapInfo(SC_MapInfoPacket* packet);
+    void HandleMapUploadResponse(SC_MapUploadResponsePacket* packet);
     void HandleGameState(SC_GameStatePacket* packet);
 
     // 스레드 함수
