@@ -27,6 +27,12 @@ public:
     // 게임 상태
     u_short my_player_id;
     bool StartGame;
+    bool Mapready;
+
+    static const int RECV_STREAM_BUFFER_SIZE = 65536;
+
+    char	m_streamBuf[RECV_STREAM_BUFFER_SIZE];
+    int		m_streamLen;
 private:
     // 네트워크
     SOCKET sock;

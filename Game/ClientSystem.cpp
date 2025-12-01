@@ -6,6 +6,7 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("[Error] WSAStartup() failed\n");
     }
+    Mapready = false;
     StartGame = false;
     InitializeCriticalSection(&m_map_cs);
     maprecvEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -68,24 +69,96 @@ DWORD WINAPI ClientSystem::ClientRecvThread(LPVOID lpParam) {
 }
 
 
-bool ClientSystem::DoRecv() {
-    int recv_len = recv(sock, recv_buffer, sizeof(recv_buffer), 0);
+bool ClientSystem::DoRecv()
+{
+    char buf[4096];
 
-    if (recv_len == SOCKET_ERROR) {
-        printf("[Error] recv() failed with error: %d\n", WSAGetLastError());
+    int recv_len = recv(sock, buf, sizeof(buf), 0);
+    if (recv_len == SOCKET_ERROR)
+    {
+        printf("[Error] recv() failed: %d\n", WSAGetLastError());
         Disconnect();
         return false;
     }
-    if (recv_len == 0) {
-        printf("[Info] Server disconnected.\n");
+    if (recv_len == 0)
+    {
+        printf("[Info] server closed connection.\n");
         Disconnect();
         return false;
     }
 
-    printf("[Debug] Received %d bytes.\n", recv_len);
-    ProcessPacket(recv_buffer);
+    // 1) 새로 받은 데이터 스트림 버퍼에 붙이기
+    if (m_streamLen + recv_len > RECV_STREAM_BUFFER_SIZE)
+    {
+        printf("[Error] stream buffer overflow. drop buffer.\n");
+        m_streamLen = 0; // 안전하게 비워버림
+        return false;
+    }
+
+    memcpy(m_streamBuf + m_streamLen, buf, recv_len);
+    m_streamLen += recv_len;
+
+    // 2) 스트림 버퍼에서 패킷 단위로 잘라 처리
+    int offset = 0;
+
+    while (true)
+    {
+        // 최소한 헤더(BasePacket) 만큼은 있어야 패킷 크기를 알 수 있음
+        if (m_streamLen - offset < (int)sizeof(BasePacket))
+        {
+            break;
+        }
+
+        BasePacket* header = (BasePacket*)(m_streamBuf + offset);
+
+        // 아직 네트워크 바이트 순서이므로 ntohs로 실제 크기 확인
+        uint16_t packetSize = ntohs(header->size);
+
+        if (packetSize == 0)
+        {
+            printf("[Error] packetSize == 0. drop stream.\n");
+            m_streamLen = 0;
+            return false;
+        }
+        if (packetSize > RECV_STREAM_BUFFER_SIZE)
+        {
+            printf("[Error] packetSize too big: %hu\n", packetSize);
+            m_streamLen = 0;
+            return false;
+        }
+
+        // 패킷 전체가 다 도착했는지 확인
+        if (m_streamLen - offset < (int)packetSize)
+        {
+            // 아직 덜 옴 → 다음 recv까지 기다림
+            break;
+        }
+
+        // 여기서부터는 m_streamBuf + offset 에 packetSize 바이트짜리
+        // "완성된 패킷"이 들어있음.
+        char packetBuf[RECV_STREAM_BUFFER_SIZE];
+        memcpy(packetBuf, m_streamBuf + offset, packetSize);
+
+        // 실제 패킷 처리
+        ProcessPacket(packetBuf);
+
+        offset += packetSize;
+    }
+
+    // 3) 아직 다 못 쓴(불완전한) 조각이 남았으면 앞으로 당김
+    if (offset > 0)
+    {
+        int remain = m_streamLen - offset;
+        if (remain > 0)
+        {
+            memmove(m_streamBuf, m_streamBuf + offset, remain);
+        }
+        m_streamLen = remain;
+    }
+
     return true;
 }
+
 
 void ClientSystem::ProcessPacket(char* packet_buf) {
     BasePacket* base_p = (BasePacket*)packet_buf;
@@ -224,7 +297,7 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
     m_map = packet->mapInfo;
 
     LeaveCriticalSection(&m_map_cs);
-
+    Mapready = true;
     SetEvent(maprecvEvent);
 }
 
