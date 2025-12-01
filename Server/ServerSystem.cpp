@@ -1,4 +1,4 @@
-﻿#include "ServerSystem.h"
+#include "ServerSystem.h"
 
 #pragma region Constructor / Destructor
 
@@ -165,7 +165,7 @@ void ServerSystem::ProcessPacket(char* packet, int client_id)
         break;
 
     case CS_START_SESSION_REQ:
-        HandleStartSessionRequest((CS_StartSessionRequestPacket*)packet,client_id);
+        HandleStartSessionRequest((CS_StartSessionRequestPacket*)packet, client_id);
         break;
 
     case CS_END_SESSION_REQ:
@@ -225,7 +225,7 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
 
 // 기본맵 시작 패킷 처리
 
-void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packet,int client_id)
+void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packet, int client_id)
 {
     ((CS_StartSessionRequestPacket*)packet)->Decode();
     map_type = packet->map_type;
@@ -249,7 +249,7 @@ void ServerSystem::BroadcastMapInfo()
 {
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
-        for (int j = 0;j < 4;++j) {
+        for (int j = 0; j < 4; ++j) {
             if (m_clients[i] != INVALID_SOCKET)
             {
                 SC_MapInfoPacket info;
@@ -374,7 +374,7 @@ void ServerSystem::CheckAllCollisions()
                     // 기본 맵일 경우에는 서버에서 관리하는 현재 맵 정보도 하나 갱신
                     if (map_type == 0 && now_map < 4) ++now_map;
                 }
-                
+
             }
         }
     }
@@ -453,6 +453,7 @@ bool ServerSystem::BroadcastGameState()
 
 #pragma region Disconnect Handling
 
+// 클라이언트 연결 종료 처리
 void ServerSystem::HandleDisconnect(int client_id)
 {
     EnterCriticalSection(&m_cs); // 임계영역 시작
@@ -466,7 +467,7 @@ void ServerSystem::HandleDisconnect(int client_id)
         closesocket(m_clients[client_id]);
         m_clients[client_id] = INVALID_SOCKET;
     }
-    
+
     // 3. 게임 상태 업데이트 (GameManager에 반영)
     server_players[client_id].is_connected = false;
 
@@ -496,202 +497,202 @@ void ServerSystem::Make_Defalt_Map()
     memset(&new_map, 0, sizeof(Map));
     //맵 블럭 초기화
     //0번 맵
-	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
-	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
-	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+    new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+    new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+    new_map.block_count++;
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
-	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
-	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+    new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+    new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+    new_map.block_count++;
 
-	for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
-	{
-		randomnum = rand() % 2;
-		if (randomnum == 0)
-		{
-			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
-			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 192;
-			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
-			new_map.block_count++;
-		}
-		else
-		{
-			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
-			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
-			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
-			new_map.block_count++;
-		}
-	}
+    for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
+    {
+        randomnum = rand() % 2;
+        if (randomnum == 0)
+        {
+            new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+            new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 192;
+            new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+            new_map.block_count++;
+        }
+        else
+        {
+            new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+            new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+            new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+            new_map.block_count++;
+        }
+    }
 
-	//맵 오브젝트 초기화
-	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
-	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Spike;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+    //맵 오브젝트 초기화
+    new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+    new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+    new_map.objects[new_map.object_count].obj_type = Spike;
+    new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+    new_map.object_count++;
 
-	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
-	{
-		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
-		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-		new_map.objects[new_map.object_count].obj_type = Spike;
-		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-		new_map.object_count++;
-	}
+    for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+    {
+        new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+        new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+        new_map.objects[new_map.object_count].obj_type = Spike;
+        new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+        new_map.object_count++;
+    }
 
-	new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + 48;
-	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Flag;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+    new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + 48;
+    new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+    new_map.objects[new_map.object_count].obj_type = Flag;
+    new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+    new_map.object_count++;
 
-	//플레이어 생성
-	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
-	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+    //플레이어 생성
+    new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+    new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
     server_map[0] = new_map;
-	//1번 맵
+    //1번 맵
 
     //맵 초기화 및 생성
-	//맵 블럭 초기화
+    //맵 블럭 초기화
     memset(&new_map, 0, sizeof(Map));
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
-	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
-	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+    new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+    new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+    new_map.block_count++;
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
-	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
-	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+    new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+    new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+    new_map.block_count++;
 
-	for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
-	{
-		new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
-		new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y - 192;
-		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
-		new_map.block_count++;
-	}
+    for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
+    {
+        new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
+        new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y - 192;
+        new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+        new_map.block_count++;
+    }
 
-	//맵 오브젝트 초기화
-	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
-	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Spike;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+    //맵 오브젝트 초기화
+    new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+    new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+    new_map.objects[new_map.object_count].obj_type = Spike;
+    new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+    new_map.object_count++;
 
-	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
-	{
-		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
-		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-		new_map.objects[new_map.object_count].obj_type = Spike;
-		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-		new_map.object_count++;
-	}
+    for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+    {
+        new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+        new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+        new_map.objects[new_map.object_count].obj_type = Spike;
+        new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+        new_map.object_count++;
+    }
 
-	new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
-	new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Flag;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+    new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
+    new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
+    new_map.objects[new_map.object_count].obj_type = Flag;
+    new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+    new_map.object_count++;
 
-	//플레이어 생성
-	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
-	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+    //플레이어 생성
+    new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+    new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
 
     server_map[1] = new_map;
-    
-	//2번 맵
-	//맵 초기화 및 생성
-	//맵 블럭 초기화
+
+    //2번 맵
+    //맵 초기화 및 생성
+    //맵 블럭 초기화
     memset(&new_map, 0, sizeof(Map));
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
-	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
-	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+    new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+    new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+    new_map.block_count++;
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
-	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
-	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+    new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+    new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+    new_map.block_count++;
 
-	for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
-	{
-		new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
-		new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
-		while (new_map.blocks[new_map.block_count].y >= new_map.blocks[0].Block_rt.top)
-		{
-			new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
-		}
-		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
-		new_map.block_count++;
+    for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
+    {
+        new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
+        new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
+        while (new_map.blocks[new_map.block_count].y >= new_map.blocks[0].Block_rt.top)
+        {
+            new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
+        }
+        new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+        new_map.block_count++;
 
-		new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[new_map.block_count - 1].x, new_map.blocks[new_map.block_count - 1].Block_rt.top - Size, new_map.block_count - 1);
-		new_map.enemy_count++;
-	}
+        new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[new_map.block_count - 1].x, new_map.blocks[new_map.block_count - 1].Block_rt.top - Size, new_map.block_count - 1);
+        new_map.enemy_count++;
+    }
 
-	//맵 오브젝트 초기화
-	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
-	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Spike;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+    //맵 오브젝트 초기화
+    new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+    new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+    new_map.objects[new_map.object_count].obj_type = Spike;
+    new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+    new_map.object_count++;
 
-	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
-	{
-		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
-		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-		new_map.objects[new_map.object_count].obj_type = Spike;
-		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-		new_map.object_count++;
-	}
+    for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+    {
+        new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+        new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+        new_map.objects[new_map.object_count].obj_type = Spike;
+        new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+        new_map.object_count++;
+    }
 
-	new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
-	new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Flag;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+    new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
+    new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
+    new_map.objects[new_map.object_count].obj_type = Flag;
+    new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+    new_map.object_count++;
 
-	//플레이어 생성
-	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
-	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+    //플레이어 생성
+    new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+    new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
 
     server_map[2] = new_map;
-	//3번 맵(보스전)
-	//맵 초기화 및 생성
-	//맵 블럭 초기화
+    //3번 맵(보스전)
+    //맵 초기화 및 생성
+    //맵 블럭 초기화
     memset(&new_map, 0, sizeof(Map));
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.left + 100;
-	new_map.blocks[new_map.block_count].y = Desk_rect.bottom - 200;
-	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
-	new_map.block_count++;
+    new_map.blocks[new_map.block_count].x = Desk_rect.left + 100;
+    new_map.blocks[new_map.block_count].y = Desk_rect.bottom - 200;
+    new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
+    new_map.block_count++;
 
-	for (int i = 0; i < ((Desk_rect.right - 260) / 480); i++)
-	{
-		new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 480;
-		new_map.blocks[new_map.block_count].y = Desk_rect.bottom - ((rand() % 256) + 160);
-		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
-		new_map.block_count++;
-	}
+    for (int i = 0; i < ((Desk_rect.right - 260) / 480); i++)
+    {
+        new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 480;
+        new_map.blocks[new_map.block_count].y = Desk_rect.bottom - ((rand() % 256) + 160);
+        new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
+        new_map.block_count++;
+    }
 
-	new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[1].x, new_map.blocks[1].Block_rt.top - Size, 1);
-	new_map.enemy_count++;
+    new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[1].x, new_map.blocks[1].Block_rt.top - Size, 1);
+    new_map.enemy_count++;
 
-	//보스 초기화
-	new_map.boss.x = Desk_rect.right - 160;
-	new_map.boss.y = Desk_rect.bottom - 320;
-	new_map.boss.life = 3;
-	new_map.boss.boss_rect = { new_map.boss.x - 160,new_map.boss.y - 160,new_map.boss.x + 160,new_map.boss.y + 160 };
-	new_map.boss_count++;
-	new_map.boss.attack_time = 480;
+    //보스 초기화
+    new_map.boss.x = Desk_rect.right - 160;
+    new_map.boss.y = Desk_rect.bottom - 320;
+    new_map.boss.life = 3;
+    new_map.boss.boss_rect = { new_map.boss.x - 160,new_map.boss.y - 160,new_map.boss.x + 160,new_map.boss.y + 160 };
+    new_map.boss_count++;
+    new_map.boss.attack_time = 480;
 
-	//플레이어 생성
-	new_map.P_Start_Loc[0].x = new_map.blocks[0].x;
-	new_map.P_Start_Loc[0].y = new_map.blocks[0].Block_rt.top - Size;
+    //플레이어 생성
+    new_map.P_Start_Loc[0].x = new_map.blocks[0].x;
+    new_map.P_Start_Loc[0].y = new_map.blocks[0].Block_rt.top - Size;
 
     server_map[3] = new_map;
 }
@@ -708,8 +709,8 @@ void ServerSystem::LoadDefaultMap(int map_num)
     RECT desk_rt = { 0,0,1920,1080 };
 
     Player dummy[3];
-   // server_map = init_map(desk_rt, dummy, map_num);
-    Make_Defalt_Map(); 
+    // server_map = init_map(desk_rt, dummy, map_num);
+    Make_Defalt_Map();
     // 모든 플레이어 동일 스폰 (추후 분리 가능)
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
