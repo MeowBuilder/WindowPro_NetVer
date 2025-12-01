@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -60,6 +60,7 @@ public:
     // 클라이언트의 PlayerUpdate 패킷 처리 (서버 authoritative update)
     void HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_id);
 
+	// 클라이언트 연결 종료 처리
     void HandleDisconnect(int client_id);
 
     // 패킷 송신 함수들
@@ -98,9 +99,9 @@ private:
     // 게임 데이터
     Player server_players[MAX_PLAYERS];  // 서버 authoritative 플레이어 상태
     Map    server_map[4];                   // 현재 게임 맵 상태(디폴트 맵에 사용되는 4개의 맵 구조체를
-                                            // 게임 시작 전에 미리 생성, now_map 변수같은걸로 현재 진행 맵 확인)
-                                            // 제작 맵과 기본 맵을 하나의 배열로 사용할거니까 처음 스타트세션 패킷 받을 때
-                                            // 구분한 게임 타입(기본, 제작) 에 따라서 now_map 등 다르게 처리
+    // 게임 시작 전에 미리 생성, now_map 변수같은걸로 현재 진행 맵 확인)
+    // 제작 맵과 기본 맵을 하나의 배열로 사용할거니까 처음 스타트세션 패킷 받을 때
+    // 구분한 게임 타입(기본, 제작) 에 따라서 now_map 등 다르게 처리
     size_t now_map;
     int map_type;
     // 기본맵 로딩
