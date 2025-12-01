@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <winsock2.h>
@@ -12,7 +12,7 @@
 
 #define SERVER_PORT 9000
 
-int RecvAll(SOCKET sock, char* buf, int len)
+int ReceiveData(SOCKET sock, char* buf, int len)
 {
     int received = 0;
     while (received < len)
@@ -26,6 +26,86 @@ int RecvAll(SOCKET sock, char* buf, int len)
     }
     return received;
 }
+
+// 패킷 타입에 따라 처리하는 함수
+void ProcessPacket(SOCKET client, char* packet_buf, bool& bLoop)
+{
+    BasePacket* base_p = (BasePacket*)packet_buf;
+    printf("\n--- RECV (Server): Packet Type %d ---\n", base_p->type);
+
+    switch (base_p->type)
+    {
+    case CS_START_SESSION_REQ:
+    {
+        CS_StartSessionRequestPacket* p = (CS_StartSessionRequestPacket*)packet_buf;
+        p->Decode();
+        p->Log();
+
+        printf("\n--- SEND (Server): SC_MapInfoPacket ---\n");
+        SC_MapInfoPacket pkt;
+        // 테스트용 맵 정보 채우기 (올바른 방식)
+        pkt.mapInfo.block_count = 1;
+        pkt.mapInfo.blocks[0].x = 100;
+        pkt.mapInfo.blocks[0].y = 200;
+        pkt.mapInfo.blocks[0].Block_rt = { 0, 0, 32, 32 };
+        pkt.Log(); // Log before Encode
+        pkt.Encode();
+        send(client, (char*)&pkt, sizeof(pkt), 0);
+        break;
+    }
+    case CS_UPLOAD_MAP:
+    {
+        CS_UploadMapPacket* p = (CS_UploadMapPacket*)packet_buf;
+        p->Decode();
+        p->Log();
+
+        printf("\n--- SEND (Server): SC_MapUploadResponsePacket ---\n");
+        SC_MapUploadResponsePacket pkt(true);
+        pkt.Log(); // Log before Encode
+        pkt.Encode();
+        send(client, (char*)&pkt, sizeof(pkt), 0);
+        break;
+    }
+    case CS_PLAYER_UPDATE:
+    {
+        CS_PlayerUpdatePacket* p = (CS_PlayerUpdatePacket*)packet_buf;
+        p->Decode();
+        p->Log();
+
+        printf("\n--- SEND (Server): SC_GameStatePacket ---\n");
+        SC_GameStatePacket state_pkt;
+        // 테스트용 게임 상태 정보 채우기
+        state_pkt.players[p->player_id].is_connected = true;
+        state_pkt.players[p->player_id].pos = p->pos;
+        state_pkt.Encode();
+        send(client, (char*)&state_pkt, sizeof(state_pkt), 0);
+
+        printf("\n--- SEND (Server): SC_EventPacket ---\n");
+        SC_EventPacket event_pkt(STAGE_CLEAR);
+        event_pkt.Encode();
+        send(client, (char*)&event_pkt, sizeof(event_pkt), 0);
+        break;
+    }
+    case CS_END_SESSION_REQ:
+    {
+        CS_EndSessionRequestPacket* p = (CS_EndSessionRequestPacket*)packet_buf;
+        p->Decode();
+        p->Log();
+
+        printf("\n--- SEND (Server): SC_DisconnectPacket ---\n");
+        SC_DisconnectPacket pkt(p->player_id);
+        pkt.Log(); // Log before Encode
+        pkt.Encode();
+        send(client, (char*)&pkt, sizeof(pkt), 0);
+        bLoop = false; // 루프 종료 플래그
+        break;
+    }
+    default:
+        printf("[SERVER] Received unhandled packet type: %d\n", base_p->type);
+        break;
+    }
+}
+
 
 int main()
 {
@@ -49,6 +129,10 @@ int main()
     addr.sin_port = htons(SERVER_PORT);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
+    // SO_REUSEADDR 옵션 설정
+    int opt = 1;
+    setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt));
+
     if (bind(listenSock, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
     {
         printf("bind() failed: %d\n", WSAGetLastError());
@@ -65,7 +149,7 @@ int main()
         return 1;
     }
 
-    printf("[SERVER] READY. Waiting...\n");
+    printf("[SERVER] READY. Waiting for a client...\n");
 
     sockaddr_in clientAddr = {};
     int clientLen = sizeof(clientAddr);
@@ -79,95 +163,74 @@ int main()
     }
     printf("[SERVER] Client connected.\n");
 
-    // -------------------------------
-    // S -> C :  SC_* Ŷ 
-    // -------------------------------
-
-    // 1) SC_AssignIDPacket
+    // 1. 초기 패킷 전송 (ID 할당, 플레이어 접속)
     {
-        SC_AssignIDPacket pkt(0);
-        printf("\n--- TEST: SC_AssignIDPacket (before Encode) ---\n");
-        pkt.Log(); // host byte order
-
+        printf("\n--- SEND (Server): SC_AssignIDPacket ---\n");
+        SC_AssignIDPacket pkt(0); // 테스트 클라이언트는 ID 0번
+        pkt.Log(); // Log before Encode
         pkt.Encode();
-        int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-        printf("[SERVER] Sent SC_AssignIDPacket: %d bytes\n", sent);
+        send(client, (char*)&pkt, sizeof(pkt), 0);
+    }
+    {
+        printf("\n--- SEND (Server): SC_PlayerJoinPacket ---\n");
+        SC_PlayerJoinPacket pkt(0); // 0번 플레이어 접속 알림
+        pkt.Log(); // Log before Encode
+        pkt.Encode();
+        send(client, (char*)&pkt, sizeof(pkt), 0);
     }
 
-    SC_MapInfoPacket pkt;
-    Map& new_map = pkt.mapInfo;
-	int randomnum;
-	new_map.block_count = new_map.object_count = new_map.enemy_count = new_map.boss_count = 0;
-    //맵 초기화 및 생성
-    
-    RECT Desk_rect = { 0,0,1920,1080 };
-	//맵 블럭 초기화
-	new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
-	new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
-	new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
-	new_map.block_count++;
+    // 2. 클라이언트로부터 패킷 수신 및 응답 루프
+    char streamBuf[4096] = { 0, };
+    int streamLen = 0;
+    bool bLoop = true;
 
-	new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
-	new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
-	new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
-	new_map.block_count++;
+    while (bLoop)
+    {
+        char recvBuf[1024];
+        int recv_len = recv(client, recvBuf, sizeof(recvBuf), 0);
+        if (recv_len <= 0)
+        {
+            printf("[SERVER] Client disconnected or recv error: %d\n", WSAGetLastError());
+            break;
+        }
 
-	for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
-	{
-		randomnum = rand() % 2;
-		if (randomnum == 0)
-		{
-			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
-			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 192;
-			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
-			new_map.block_count++;
-		}
-		else
-		{
-			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
-			new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
-			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
-			new_map.block_count++;
-		}
-	}
+        memcpy(streamBuf + streamLen, recvBuf, recv_len);
+        streamLen += recv_len;
 
-	//맵 오브젝트 초기화
-	new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
-	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Spike;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+        int offset = 0;
+        while (streamLen - offset >= sizeof(BasePacket))
+        {
+            BasePacket* header = (BasePacket*)(streamBuf + offset);
+            uint16_t packetSize = ntohs(header->size);
 
-	for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
-	{
-		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
-		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-		new_map.objects[new_map.object_count].obj_type = Spike;
-		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-		new_map.object_count++;
-	}
+            if (packetSize > 0 && streamLen - offset >= packetSize)
+            {
+                char packet_buf[16384];
+                memcpy(packet_buf, streamBuf + offset, packetSize);
 
-	new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + 48;
-	new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
-	new_map.objects[new_map.object_count].obj_type = Flag;
-	new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
-	new_map.object_count++;
+                ProcessPacket(client, packet_buf, bLoop);
+                
+                offset += packetSize;
 
-	//플레이어 생성
-	new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
-	new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
-    new_map.P_Start_Loc[1].x = Desk_rect.left + 64;
-    new_map.P_Start_Loc[1].y = Desk_rect.bottom - 128;
-    new_map.P_Start_Loc[2].x = Desk_rect.left + 64;
-    new_map.P_Start_Loc[2].y = Desk_rect.bottom - 128;
+                if (!bLoop) break;
+            }
+            else
+            {
+                break;
+            }
+        }
 
+        if (offset > 0)
+        {
+            int remain = streamLen - offset;
+            if (remain > 0)
+            {
+                memmove(streamBuf, streamBuf + offset, remain);
+            }
+            streamLen = remain;
+        }
+    }
 
-    printf("\n--- TEST: SC_MapInfoPacket (before Encode) ---\n");
-    pkt.Log();
-
-    pkt.Encode();
-    int sent = send(client, (char*)&pkt, sizeof(pkt), 0);
-    printf("[SERVER] Sent SC_MapInfoPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(pkt));
 
     printf("\n[SERVER] Test sequence done. Closing.\n");
 

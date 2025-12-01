@@ -1,4 +1,4 @@
-#ifndef PACKETS_H
+﻿#ifndef PACKETS_H
 #define PACKETS_H
 
 #pragma once
@@ -29,6 +29,7 @@ constexpr char SC_MAP_INFO = 12;
 constexpr char SC_GAME_STATE = 13;
 constexpr char SC_EVENT = 14;
 constexpr char SC_DISCONNECT = 15;
+constexpr char SC_PLAYER_JOIN = 16;
 
 // --- 이벤트 타입 정의 (프로젝트 계획서 기반) ---
 enum E_EventType { STAGE_CLEAR, GAME_WIN };
@@ -621,6 +622,38 @@ public:
 
     void Log() const {
         printf("[SC_DisconnectPacket] Type: %d, Size: %hu, DisconnectedPlayerID: %hu\n", type, size, disconnected_player_id);
+    }
+};
+
+// [S->C] 새로운 플레이어의 접속을 알리는 패킷
+class SC_PlayerJoinPacket : public BasePacket {
+public:
+    u_short joined_player_id; // 새로 접속한 플레이어의 ID
+
+    SC_PlayerJoinPacket() {
+        size = sizeof(SC_PlayerJoinPacket);
+        type = SC_PLAYER_JOIN;
+        joined_player_id = (u_short)-1;
+    }
+
+    SC_PlayerJoinPacket(u_short id) {
+        size = sizeof(SC_PlayerJoinPacket);
+        type = SC_PLAYER_JOIN;
+        joined_player_id = id;
+    }
+
+    void Encode() {
+        size = htons(size);
+        joined_player_id = htons(joined_player_id);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        joined_player_id = ntohs(joined_player_id);
+    }
+
+    void Log() const {
+        printf("[SC_PlayerJoinPacket] Type: %d, Size: %hu, JoinedPlayerID: %hu\n", type, size, joined_player_id);
     }
 };
 

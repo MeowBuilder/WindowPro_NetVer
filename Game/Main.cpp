@@ -157,7 +157,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		GetClientRect(hWnd, &Client_rect);
 		client.my_player_id = 0;
 
-		client.Connect("10.20.11.21", 9000);
+		client.Connect("127.0.0.1", 9000);
 		client.StartRecvThread();
 
 		SetTimer(hWnd, 0, 0.016, (TIMERPROC)StartTimer);
