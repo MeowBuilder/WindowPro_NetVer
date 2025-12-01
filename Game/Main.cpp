@@ -157,7 +157,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		GetClientRect(hWnd, &Client_rect);
 		client.my_player_id = 0;
 
-		client.Connect("127.0.0.1", 9000);
+		client.Connect("10.20.11.21", 9000);
 		client.StartRecvThread();
 
 		SetTimer(hWnd, 0, 0.016, (TIMERPROC)StartTimer);
@@ -389,12 +389,23 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
 	Player* hPlayer;
-	hPlayer = client.getPlayer(1);
+	hPlayer = client.getPlayer(0);
+	for (int i = 0; i < 2; i++)
+	{
+		if (i = client.my_player_id)
+		{
+			continue;
+		}
+
+		hPlayer = client.getPlayer(i);
+		break;
+	}
+	
 	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
 	{
 	case 1:
-		hPlayer->x++; //테스트용 실제 충돌처리는 서버에서 진행
+		//hPlayer->x++; //테스트용 실제 충돌처리는 서버에서 진행
 
 		if (window_move)
 		{
@@ -414,8 +425,6 @@ LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam
 	HDC hdc, mdc;
 	PAINTSTRUCT ps;
 
-	Player* hPlayer;
-	hPlayer = client.getPlayer(1);
 	static int x, y;
 	switch (iMsg) {
 	case WM_CREATE:
@@ -478,15 +487,15 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 
 	static int x, y;
-
+	int id = 0;
 	switch (iMsg) {
 	case WM_CREATE:
-		result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
+		result = FMOD::System_Create(&ssystem);
 		if (result != FMOD_OK) exit(0);
-		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
-		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
-		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
-		ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3); //--- 3�� ���� ���� �� ����
+		ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); 
+		ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1);
+		ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2);
+		ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3); 
 		
 	
 		channel->stop();
@@ -515,10 +524,6 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc);
 		break;
 	case WM_KEYDOWN:
-		if (client.my_player_id != 0)
-		{
-			break;
-		}
 		switch (wParam) {
 		case VK_CONTROL:
 			window_move = !window_move;
@@ -611,9 +616,18 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		// 3. 플레이어들 그리기 (내 캐릭터 + 다른 플레이어들)
 		// Player_Draw 함수가 mdc에 그리도록 되어 있으므로 순서대로 호출
-		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);           // 나
-		Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(1)); // 플레이어 2
-		// Player_Draw(&mdc, &resourcedc, Tino_bitmap, client.getPlayer(2)); // 플레이어 3 (필요시)
+		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);
+		for (id; id < 2; id++)
+		{
+			if (id == client.my_player_id)
+			{
+				continue;
+			}
+			Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
+		}
+		//Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);           // 나
+		//Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(1)); // 플레이어 2
+		//Player_Draw(&mdc, &resourcedc, Tino_bitmap, client.getPlayer(2)); // 플레이어 3 (필요시)
 
 		// 4. 맵 오브젝트 그리기
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
@@ -658,8 +672,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 		if (!IntersectRect(&temp_rt, &player.player_rt, &Desk_rect))
 		{
-			player.x = map.P_Start_Loc[0].x;
-			player.y = map.P_Start_Loc[0].y;
+			player.x = map.P_Start_Loc[client.my_player_id].x;
+			player.y = map.P_Start_Loc[client.my_player_id].y;
 			player.DOWN = false;
 			player.is_in_air = false;
 			window_move = true;
@@ -1214,14 +1228,11 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			TransparentBlt(mdc, 0, 0, Desk_rect.right, Desk_rect.bottom, resourcedc, 0, 0, 2370, 1190, RGB(0, 0, 255));
 		}
 
-		//ĳ���� �׸���
 		SelectObject(resourcedc, Tino_bitmap);
 		TransparentBlt(mdc, Editmap.P_Start_Loc[0].x - Size, Editmap.P_Start_Loc[0].y - Size, (Size * 2), (Size * 2), resourcedc, 0, 0, 150, 140, RGB(0, 0, 255));
 
-		//�� �׸���
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, Editmap);
 
-		//���� �׸��� ��� �׸���
 		switch (curDrawmod)
 		{
 		case D_Block:
