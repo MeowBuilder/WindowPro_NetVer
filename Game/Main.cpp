@@ -175,13 +175,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ShowWindow(hWnd, SW_HIDE);
 
 			client.SendStartSessionRequestPacket(&SSRP);
-
+			/*
 			selected_map = 0;
 			map = client.GetMap();
 			player = Make_Player(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
 
 			CreateGameWindow(g_hinst);
-			CreateGameWindow2(g_hinst);
+			CreateGameWindow2(g_hinst);*/
 			//CreateGameWindow3(g_hinst);
 			break;
 		case 2:

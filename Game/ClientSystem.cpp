@@ -298,12 +298,12 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 
     LeaveCriticalSection(&m_map_cs);
     Mapready = true;
+    StartGame = true;
     SetEvent(maprecvEvent);
 }
 
 void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
 {
-
     if (packet->is_success)
     {
         StartGame = true;
@@ -321,8 +321,8 @@ Map ClientSystem::GetMap()
     temp_map = m_map;
 
     players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
-    players[1] = Make_Player(temp_map.P_Start_Loc[1].x, temp_map.P_Start_Loc[1].y);
-    players[2] = Make_Player(temp_map.P_Start_Loc[2].x, temp_map.P_Start_Loc[2].y);
+    players[1] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
+    players[2] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
     LeaveCriticalSection(&m_map_cs);
 
     return temp_map;
