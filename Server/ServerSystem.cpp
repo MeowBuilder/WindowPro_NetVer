@@ -224,7 +224,6 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
 }
 
 // 기본맵 시작 패킷 처리
-
 void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packet, int client_id)
 {
     ((CS_StartSessionRequestPacket*)packet)->Decode();
@@ -386,6 +385,7 @@ void ServerSystem::CheckAllCollisions()
 
 #pragma region Send Functions
 
+// 업로드 성공/실패 응답 보내기
 bool ServerSystem::SendMapUploadResponsePacket(int client_id, bool success)
 {
     SC_MapUploadResponsePacket p(success);
@@ -394,6 +394,7 @@ bool ServerSystem::SendMapUploadResponsePacket(int client_id, bool success)
     return true;
 }
 
+// 맵 정보(Map 전체)를 특정 클라이언트에게 전송
 bool ServerSystem::SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet)
 {
     packet->Encode();
@@ -401,6 +402,7 @@ bool ServerSystem::SendMapInfoPacket(int client_id, SC_MapInfoPacket* packet)
     return true;
 }
 
+// 클라이언트에게 고유 ID(0~2) 부여
 bool ServerSystem::SendAssignIDPacket(int client_id, u_short id)
 {
     SC_AssignIDPacket p(id);
@@ -409,6 +411,7 @@ bool ServerSystem::SendAssignIDPacket(int client_id, u_short id)
     return true;
 }
 
+// 이벤트 패킷 전송
 bool ServerSystem::SendEventPacket(int client_id, E_EventType event_type)
 {
     SC_EventPacket p(event_type);
@@ -488,6 +491,7 @@ void ServerSystem::HandleDisconnect(int client_id)
 
 #pragma endregion
 
+// 디폴트 맵 생성
 void ServerSystem::Make_Defalt_Map()
 {
     Map new_map;
@@ -703,7 +707,7 @@ void ServerSystem::Make_Defalt_Map()
 
 #pragma region Default Map Load
 
-// 기본맵 생성 + 플레이어 스폰 초기화
+// 디폴트 맵 로드
 void ServerSystem::LoadDefaultMap(int map_num)
 {
     RECT desk_rt = { 0,0,1920,1080 };
