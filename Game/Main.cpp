@@ -419,6 +419,16 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	Player* hPlayer;
 	hPlayer = client.getPlayer(1);
 	//if (!hPlayer->is_connected) return;
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (i == client.my_player_id)
+		{
+			continue;
+		}
+		hPlayer = client.getPlayer(i);
+		break;
+	}
 	
 	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
@@ -498,6 +508,23 @@ void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	Player* hPlayer;
 	hPlayer = client.getPlayer(2);
 	//if (!hPlayer->is_connected) return;
+
+	int found_count = 0;
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (i == client.my_player_id)
+		{
+			continue;
+		}
+		found_count++;
+		
+		if (found_count == 2)
+		{
+			hPlayer = client.getPlayer(i);
+			break;
+		}
+	}
 
 	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
