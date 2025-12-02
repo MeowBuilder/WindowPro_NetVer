@@ -108,14 +108,14 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
     wcex.lpszClassName = L"WindowClass";
     wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
     if (!RegisterClassEx(&wcex)) {
-        MessageBox(nullptr, L"������ ��� ����", L"����", MB_OK);
+        MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
         return 1;
     }
 
 	HWND hWnd = CreateWindow(L"WindowClass", L"WindowPro", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd) {
-        MessageBox(nullptr, L"������ ���� ����", L"����", MB_OK);
+        MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
         return 1;
     }
 
@@ -157,7 +157,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		Edit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP12, 200, 50);
 		CreateButtons(hWnd, Start_bitmap, Exit_bitmap, Edit_bitmap);
 		GetClientRect(hWnd, &Client_rect);
-		client.my_player_id = 0;
 
 		client.Connect("127.0.0.1", 9000);
 		client.StartRecvThread();
@@ -507,7 +506,7 @@ void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	GetWindowRect(hWnd, &window_rect);
 	Player* hPlayer;
 	hPlayer = client.getPlayer(2);
-	//if (!hPlayer->is_connected) return;
+	if (!hPlayer->is_connected) return;
 
 	int found_count = 0;
 
@@ -1318,7 +1317,7 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 			DeleteObject(Platforms_bitmap);
 			DeleteObject(BGM_bitmap);
 			DeleteObject(BGN_bitmap);
-			CloseEditWindow(hWnd); // Ÿ��Ʋ ȭ������ ���ư�.
+			CloseEditWindow(hWnd);
 			break;
 		default:
 			break;
