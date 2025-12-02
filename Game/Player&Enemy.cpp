@@ -33,8 +33,8 @@ void Player_Draw(HDC* mdc, HDC* resourcedc, HBITMAP Tino_bitmap, Player player) 
 	// 플레이어 머리 위에 목숨 수만큼 체력 바 그리기
 	int lifeBarX = player.x - Size;
 	int lifeBarY = player.y - (Size * 2);
-	int lifeBarHeight = 10; 
-	int lifeBarSpacing = 3; 
+	int lifeBarHeight = 10;
+	int lifeBarSpacing = 3;
 
 	for (int i = 0; i < player.player_life; ++i) {
 		int lifeBarCenterX = lifeBarX + (i * (lifeBarSpacing + lifeBarHeight)) + lifeBarHeight / 2;

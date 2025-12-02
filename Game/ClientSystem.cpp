@@ -321,8 +321,13 @@ Map ClientSystem::GetMap()
     temp_map = m_map;
 
     players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
-    players[1] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
-    players[2] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
+    players[1] = Make_Player(temp_map.P_Start_Loc[0].x+100, temp_map.P_Start_Loc[0].y);
+    players[2] = Make_Player(temp_map.P_Start_Loc[0].x+200, temp_map.P_Start_Loc[0].y);
+    for (size_t i = 0; i < 3; i++)
+    {
+        players[i].is_connected = true;
+    }
+
     LeaveCriticalSection(&m_map_cs);
 
     return temp_map;

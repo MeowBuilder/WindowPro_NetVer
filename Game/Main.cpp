@@ -21,7 +21,6 @@ void* extradriverdata = 0;
 
 HINSTANCE g_hinst;
 LPCTSTR lpszClass = L"Window Class Name";
-LPCTSTR lpszWindowName = L"����";
 
 ClientSystem client;
 
@@ -54,11 +53,14 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 void CreateGameWindow(HINSTANCE hInstance);
 void CreateGameWindow2(HINSTANCE hInstance);
+void CreateGameWindow3(HINSTANCE hInstance);
 void CloseGameWindow(HWND hGameWnd);
 
 LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
+LRESULT CALLBACK WndProcGame3(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
+void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 void CreateEditWindow(HINSTANCE hInstance);
@@ -175,14 +177,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ShowWindow(hWnd, SW_HIDE);
 
 			client.SendStartSessionRequestPacket(&SSRP);
-			/*
-			selected_map = 0;
-			map = client.GetMap();
-			player = Make_Player(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
 
-			CreateGameWindow(g_hinst);
-			CreateGameWindow2(g_hinst);*/
-			//CreateGameWindow3(g_hinst);
 			break;
 		case 2:
 			channel->stop();
@@ -263,8 +258,9 @@ void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		map = client.GetMap();
 		player = Make_Player(map.P_Start_Loc[client.my_player_id].x, map.P_Start_Loc[client.my_player_id].y);
 
-		CreateGameWindow(g_hinst);
+		CreateGameWindow3(g_hinst);
 		CreateGameWindow2(g_hinst);
+		CreateGameWindow(g_hinst);
 		client.StartGame = false;
 	}
 }
@@ -284,8 +280,15 @@ void CloseGameWindow(HWND hGameWnd) {
 		DestroyWindow(hOtherPlayerWnd);
 	}
 
-	//UnregisterClass(L"GameWindow", g_hinst);
-	//UnregisterClass(L"GameWindow2", g_hinst);
+	// 2. 다른 플레이어 윈도우 찾기 및 닫기
+	HWND hOtherPlayerWnd2 = FindWindow(L"GameWindow3", NULL);
+	if (hOtherPlayerWnd2) {
+		DestroyWindow(hOtherPlayerWnd2);
+	}
+
+	UnregisterClass(L"GameWindow", g_hinst);
+	UnregisterClass(L"GameWindow2", g_hinst);
+	UnregisterClass(L"GameWindow3", g_hinst);
 
 	// 타이틀 윈도우 다시 표시
 	if (hTitleWnd) {
@@ -313,7 +316,7 @@ void CreateGameWindow(HINSTANCE hInstance) {
 	WndClass.hIconSm = LoadIcon(NULL, IDI_ASTERISK);
 	RegisterClassEx(&WndClass);
 
-	hWnd = CreateWindow(L"GameWindow", lpszWindowName, WS_CAPTION, 100, 50, 800, 800, NULL, NULL, hInstance, NULL);
+	hWnd = CreateWindow(L"GameWindow", L"Main Player", WS_CAPTION, 100, 50, 800, 800, NULL, NULL, hInstance, NULL);
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 }
@@ -338,7 +341,32 @@ void CreateGameWindow2(HINSTANCE hInstance) {
 	RegisterClassEx(&WndClass);
 
 	// 메인 게임 윈도우와 겹치지 않도록 위치와 크기를 조정할 수 있습니다.
-	hWnd = CreateWindow(L"GameWindow2", L"Other Player", WS_CAPTION, 950, 50, 320, 320, NULL, NULL, hInstance, NULL);
+	hWnd = CreateWindow(L"GameWindow2", L"Other Player", WS_CAPTION, 100, 50, 320, 320, NULL, NULL, hInstance, NULL);
+	ShowWindow(hWnd, SW_SHOW);
+	UpdateWindow(hWnd);
+}
+
+void CreateGameWindow3(HINSTANCE hInstance) {
+	HWND hWnd;
+	WNDCLASSEX WndClass;
+	g_hinst = hInstance;
+
+	WndClass.cbSize = sizeof(WndClass);
+	WndClass.style = CS_HREDRAW | CS_VREDRAW;
+	WndClass.lpfnWndProc = (WNDPROC)WndProcGame3; // ★ WndProcGame2를 사용
+	WndClass.cbClsExtra = 0;
+	WndClass.cbWndExtra = 0;
+	WndClass.hInstance = hInstance;
+	WndClass.hIcon = LoadIcon(NULL, IDI_ASTERISK);
+	WndClass.hCursor = LoadCursor(NULL, IDC_NO);
+	WndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	WndClass.lpszMenuName = NULL;
+	WndClass.lpszClassName = L"GameWindow3"; // 고유한 클래스 이름
+	WndClass.hIconSm = LoadIcon(NULL, IDI_ASTERISK);
+	RegisterClassEx(&WndClass);
+
+	// 메인 게임 윈도우와 겹치지 않도록 위치와 크기를 조정할 수 있습니다.
+	hWnd = CreateWindow(L"GameWindow3", L"Other Player2", WS_CAPTION, 100, 50, 320, 320, NULL, NULL, hInstance, NULL);
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 }
@@ -371,7 +399,7 @@ void CreateEditWindow(HINSTANCE hInstance) {
 	WndClass.hIconSm = LoadIcon(NULL, IDI_ASTERISK);
 	RegisterClassEx(&WndClass);
 
-	hWnd = CreateWindow(L"EditWindow", lpszWindowName, WS_CAPTION, 0, 0, width, height, NULL, NULL, hInstance, NULL);
+	hWnd = CreateWindow(L"EditWindow", L"Edit Window", WS_CAPTION, 0, 0, width, height, NULL, NULL, hInstance, NULL);
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 
@@ -389,23 +417,14 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
 	Player* hPlayer;
-	hPlayer = client.getPlayer(0);
-	for (int i = 0; i < 2; i++)
-	{
-		if (i = client.my_player_id)
-		{
-			continue;
-		}
-
-		hPlayer = client.getPlayer(i);
-		break;
-	}
+	hPlayer = client.getPlayer(1);
+	//if (!hPlayer->is_connected) return;
 	
 	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
 	{
 	case 1:
-		//hPlayer->x++; //테스트용 실제 충돌처리는 서버에서 진행
+		//hPlayer->x--;
 
 		if (window_move)
 		{
@@ -428,19 +447,88 @@ LRESULT CALLBACK WndProcGame2(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam
 	static int x, y;
 	switch (iMsg) {
 	case WM_CREATE:
-		//result = FMOD::System_Create(&ssystem); //--- ���� �ý��� ����
-		//if (result != FMOD_OK)
-		//	exit(0);
-		//ssystem->init(32, FMOD_INIT_NORMAL, extradriverdata); //--- ���� �ý��� �ʱ�ȭ
-		//ssystem->createSound("bgm.wav", FMOD_LOOP_NORMAL, 0, &sound1); //--- 1�� ���� ���� �� ����
-		//ssystem->createSound("jump.wav", FMOD_LOOP_OFF, 0, &sound2); //--- 2�� ���� ���� �� ����
-		//ssystem->createSound("down.wav", FMOD_LOOP_OFF, 0, &sound3);
-		//channel->stop();
-		//ssystem->playSound(sound1, 0, false, &channel);
-
 		srand(time(NULL));
 
 		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc2);
+		break;
+	case WM_PAINT:
+		hdc = BeginPaint(hWnd, &ps);
+
+		// 1. 이미 그려진 전역 비트맵이 있는지 확인
+		if (g_hFullMapBitmap) {
+			mdc = CreateCompatibleDC(hdc);
+
+			// 2. 전역 비트맵을 선택 (읽기 모드)
+			HBITMAP hOldBitmap = (HBITMAP)SelectObject(mdc, g_hFullMapBitmap);
+
+			// 3. 현재 이 윈도우의 위치 가져오기
+			GetWindowRect(hWnd, &window_rect);
+			GetClientRect(hWnd, &wnd_rt);
+
+			// 4. 전역 비트맵에서 내 윈도우 위치에 해당하는 부분만 가져와서 그리기
+			// window_rect.left, top은 전체 화면(맵) 기준의 좌표라고 가정
+			BitBlt(hdc, 0, 0, wnd_rt.right, wnd_rt.bottom,
+				mdc, window_rect.left, window_rect.top, SRCCOPY);
+
+			// 정리
+			SelectObject(mdc, hOldBitmap);
+			DeleteDC(mdc);
+		}
+		else {
+			// 아직 메인 윈도우가 비트맵을 안 만들었으면 흰색 등으로 채움
+			Rectangle(hdc, 0, 0, 320, 320);
+		}
+
+		EndPaint(hWnd, &ps);
+		break;
+	case WM_DESTROY:
+		//ssystem->release();
+		break;
+	}
+	return DefWindowProc(hWnd, iMsg, wParam, lParam);
+}
+
+void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
+	RECT temp_rt;
+	RECT Desk_rect;
+	int randomnum;
+
+	GetClientRect(hWnd, &wnd_rt);
+	GetWindowRect(hWnd, &window_rect);
+	Player* hPlayer;
+	hPlayer = client.getPlayer(2);
+	//if (!hPlayer->is_connected) return;
+
+	Desk_rect = { 0,0,1920,1080 };
+	switch (idEvent)
+	{
+	case 1:
+		//hPlayer->x++;
+
+		if (window_move)
+		{
+			MoveWindow(hWnd, std::clamp(hPlayer->x - (wnd_rt.right / 2), (long)0, (long)Desk_rect.right - (wnd_rt.right)), hPlayer->y - (wnd_rt.bottom / 2), 320, 320, true);
+		}
+		else
+		{
+			MoveWindow(hWnd, window_rect.left, hPlayer->y - (wnd_rt.bottom / 2), 320, 320, true);
+		}
+	default:
+		break;
+	}
+	InvalidateRect(hWnd, NULL, false);
+}
+
+LRESULT CALLBACK WndProcGame3(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	HDC hdc, mdc;
+	PAINTSTRUCT ps;
+
+	static int x, y;
+	switch (iMsg) {
+	case WM_CREATE:
+		srand(time(NULL));
+
+		SetTimer(hWnd, 1, 0.016, (TIMERPROC)TimerProc3);
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
@@ -617,17 +705,19 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		// 3. 플레이어들 그리기 (내 캐릭터 + 다른 플레이어들)
 		// Player_Draw 함수가 mdc에 그리도록 되어 있으므로 순서대로 호출
 		Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);
-		for (id; id < 2; id++)
+		for (id; id < 3; id++)
 		{
 			if (id == client.my_player_id)
 			{
 				continue;
 			}
 			Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
+
+			/*if (client.getPlayer(id)->is_connected)
+			{
+				Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
+			}*/
 		}
-		//Player_Draw(&mdc, &resourcedc, Tino_bitmap, player);           // 나
-		//Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(1)); // 플레이어 2
-		//Player_Draw(&mdc, &resourcedc, Tino_bitmap, client.getPlayer(2)); // 플레이어 3 (필요시)
 
 		// 4. 맵 오브젝트 그리기
 		Draw_Map(&mdc, &resourcedc, Object_bitmap, Platforms_bitmap, Enemy_bitmap, Enemy_rv_bitmap, map);
