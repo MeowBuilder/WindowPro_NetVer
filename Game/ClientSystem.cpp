@@ -214,6 +214,13 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandleMapUploadResponse(p);
             break;
         }
+        case SC_PLAYER_JOIN: { // 새로 추가된 SC_PLAYER_JOIN 패킷 처리
+            SC_PlayerJoinPacket* p = (SC_PlayerJoinPacket*)packet_buf;
+            p->Decode();
+            p->Log(); // 디버깅용
+            HandlePlayerJoin(p);
+            break;
+        }
         // 다른 패킷 처리 케이스를 여기에 추가
         default: {
             printf("[Warning] Received unknown packet type: %d\n", base_p->type);
@@ -387,4 +394,27 @@ bool ClientSystem::SendEndSessionRequestPacket() {
     
     printf("[Info] Sent CS_EndSessionRequestPacket for player ID %hu, %d bytes.\n", my_player_id, sent_bytes);
     return true;
+}
+
+// [S->C] 새로운 플레이어의 접속을 알리는 패킷 처리
+void ClientSystem::HandlePlayerJoin(SC_PlayerJoinPacket* packet) {
+    u_short joined_player_id = packet->joined_player_id;
+
+    // 유효한 플레이어 ID인지 확인
+    if (joined_player_id >= 0 && joined_player_id < 3) {
+        // 내 자신의 접속 메시지는 무시 (이미 연결되어 있다고 가정)
+        if (joined_player_id == my_player_id) {
+            printf("[Info] Received SC_PLAYER_JOIN for self (ID: %hu), ignoring.\n", joined_player_id);
+            return;
+        }
+
+        // 해당 플레이어의 연결 상태를 true로 설정
+        // GameManager.h에 정의된 Player 구조체의 is_connected 필드를 사용
+        players[joined_player_id].is_connected = true;
+        printf("[Info] Player %hu has joined the game.\n", joined_player_id);
+
+        // GUI 업데이트를 위해 필요한 경우, 여기에 추가적인 로직 (예: UI 매니저 호출)을 추가할 수 있습니다.
+    } else {
+        printf("[Warning] Received SC_PLAYER_JOIN with invalid player ID: %hu\n", joined_player_id);
+    }
 }

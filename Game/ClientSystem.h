@@ -53,6 +53,7 @@ private:
     void HandleEvent(SC_EventPacket* packet);
     void HandleMapInfo(SC_MapInfoPacket* packet);
     void HandleMapUploadResponse(SC_MapUploadResponsePacket* packet);
+    void HandlePlayerJoin(SC_PlayerJoinPacket* packet);
     void HandleGameState(SC_GameStatePacket* packet);
 
     // 스레드 함수
