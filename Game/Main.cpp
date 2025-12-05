@@ -1,4 +1,4 @@
-#include "Packets.h"
+﻿#include "Packets.h"
 #include <Windows.h>
 #include <tchar.h>
 #include <time.h>
@@ -7,6 +7,7 @@
 #include "Block&Object.h"
 #include "Player&Enemy.h"
 #include "resource.h"
+#include "resource_ip_dialog.h" // Add this line
 
 #include "ClientSystem.h"
 #include "Packets.h"
@@ -21,6 +22,9 @@ void* extradriverdata = 0;
 
 HINSTANCE g_hinst;
 LPCTSTR lpszClass = L"Window Class Name";
+
+char szServerIP_mb[16] = "127.0.0.1";
+wchar_t szServerIP_wc[16] = L"127.0.0.1";
 
 ClientSystem client;
 
@@ -47,6 +51,8 @@ int height = 1080;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
+void CreateButtons(HWND hWnd, HBITMAP Start_bitmap, HBITMAP Exit_bitmap, HBITMAP Edit_bitmap);
+HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height);
 
 
 LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
@@ -66,6 +72,11 @@ LRESULT CALLBACK WndEditProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lPa
 void CreateEditWindow(HINSTANCE hInstance);
 void CloseEditWindow(HWND hGameWnd);
 
+HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height) {
+	HBITMAP hBitmap = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(nIDResource), IMAGE_BITMAP, width, height, LR_CREATEDIBSECTION);
+	return hBitmap;
+}
+
 void CreateButtons(HWND hWnd, HBITMAP Start_bitmap, HBITMAP Exit_bitmap, HBITMAP Edit_bitmap) {
 	HWND hStartButton = CreateWindow(
 		L"BUTTON", L"", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_BITMAP,
@@ -83,10 +94,35 @@ void CreateButtons(HWND hWnd, HBITMAP Start_bitmap, HBITMAP Exit_bitmap, HBITMAP
 	SendMessage(hEditButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)Edit_bitmap);
 }
 
-HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height) {
-	HBITMAP hBitmap = (HBITMAP)LoadImage(hInst, MAKEINTRESOURCE(nIDResource), IMAGE_BITMAP, width, height, LR_CREATEDIBSECTION);
-	return hBitmap;
+INT_PTR CALLBACK IPInputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch (message) {
+        case WM_INITDIALOG:
+            
+            SetDlgItemTextW(hDlg, IDC_IPADDRESS_EDIT, szServerIP_wc);
+            return TRUE;
+
+        case WM_COMMAND:
+            switch (LOWORD(wParam)) {
+                case IDOK_CONNECT: {
+                    
+                    wchar_t tempIP_wc[16];
+                    GetDlgItemTextW(hDlg, IDC_IPADDRESS_EDIT, tempIP_wc, _countof(tempIP_wc));
+                    wcsncpy_s(szServerIP_wc, _countof(szServerIP_wc), tempIP_wc, _TRUNCATE);
+                    EndDialog(hDlg, IDOK_CONNECT);
+                    return TRUE;
+                }
+                case IDCANCEL_CONNECT:
+                    EndDialog(hDlg, IDCANCEL_CONNECT);
+                    return TRUE;
+            }
+            break;
+        case WM_CLOSE:
+            EndDialog(hDlg, IDCANCEL_CONNECT);
+            return TRUE;
+    }
+    return FALSE;
 }
+
 
  int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     g_hinst = hInstance;
@@ -94,6 +130,32 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
 	selected_map = 0;
 	Desk_rect = { 0,0,1920,1080 };
 
+    // 윈속 초기화 (DialogBoxParam 호출 전에 필요할 수 있음)
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+        return 1;
+
+    // IP 입력 Dialog 표시
+    INT_PTR dialogResult = DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_IP_INPUT), NULL, IPInputDlgProc, 0);
+
+    if (dialogResult == IDOK_CONNECT) {
+        // Wide-character IP를 Multi-byte IP로 변환
+        size_t num_chars_converted;
+        wcstombs_s(&num_chars_converted, szServerIP_mb, _countof(szServerIP_mb), szServerIP_wc, _TRUNCATE);
+
+        // IP가 성공적으로 입력되었으므로 연결 시도
+        if (!client.Connect(szServerIP_mb, 9000)) {
+            MessageBoxA(NULL, "Failed to connect to server. Exiting.", "Connection Error", MB_OK | MB_ICONERROR);
+            WSACleanup();
+            return 1; // 종료
+        }
+        client.StartRecvThread();
+    } else {
+        // 사용자가 취소했거나 Dialog 닫음
+        WSACleanup();
+        return 0; // 정상 종료
+    }
+    
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -109,6 +171,9 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
     wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
     if (!RegisterClassEx(&wcex)) {
         MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
+        // 클라이언트 연결 해제 및 윈속 정리
+        client.Disconnect();
+        WSACleanup();
         return 1;
     }
 
@@ -116,6 +181,9 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
 
     if (!hWnd) {
         MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
+        // 클라이언트 연결 해제 및 윈속 정리
+        client.Disconnect();
+        WSACleanup();
         return 1;
     }
 
@@ -128,6 +196,8 @@ HBITMAP LoadScaledBitmap(HINSTANCE hInst, int nIDResource, int width, int height
         DispatchMessage(&msg);
     }
 
+    // 윈속 종료
+    WSACleanup(); // WinMain 종료 전에 WSACleanup 호출
     return (int)msg.wParam;
 }
 
@@ -157,9 +227,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		Edit_bitmap = LoadScaledBitmap(g_hinst, IDB_BITMAP12, 200, 50);
 		CreateButtons(hWnd, Start_bitmap, Exit_bitmap, Edit_bitmap);
 		GetClientRect(hWnd, &Client_rect);
-
-		client.Connect("127.0.0.1", 9000);
-		client.StartRecvThread();
 
 		SetTimer(hWnd, 0, 0.016, (TIMERPROC)StartTimer);
 		break;

@@ -1,0 +1,22 @@
+﻿#include <winres.h>
+#include "resource_ip_dialog.h"
+
+//
+// Dialog
+//
+
+IDD_IP_INPUT DIALOGEX 0, 0, 200, 70
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "서버 IP 입력"
+// [변경] "MS Shell Dlg" -> "Malgun Gothic" (더 깔끔한 폰트)
+FONT 9, "Malgun Gothic", 400, 0, 0x1
+BEGIN
+CONTROL         "서버 IP 주소:", IDC_STATIC_IP_PROMPT, "Static", SS_LEFTNOWORDWRAP | WS_CHILD | WS_VISIBLE | WS_GROUP, 7, 7, 60, 8
+
+// [중요 수정] "SysIPAddress32" -> "Edit"
+// SysIPAddress32는 GetDlgItemText로 값을 못 가져옵니다. 일반 Edit 박스로 변경해야 코드가 작동합니다.
+CONTROL         "", IDC_IPADDRESS_EDIT, "Edit", WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL | WS_BORDER, 70, 5, 120, 14
+
+DEFPUSHBUTTON   "확인", IDOK_CONNECT, 50, 40, 40, 14
+PUSHBUTTON      "취소", IDCANCEL_CONNECT, 110, 40, 40, 14
+END
