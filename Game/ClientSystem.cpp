@@ -1,5 +1,6 @@
 #include "ClientSystem.h"
 #include <cstdio>
+#include "resource_ip_dialog.h" // WM_USER_UPDATE_PLAYER_LIST를 사용하기 위해 추가
 
 ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_player_id(-1) {
     WSADATA wsaData;
@@ -202,6 +203,10 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             if (p->disconnected_player_id >= 0 && p->disconnected_player_id < 3) {
                 players[p->disconnected_player_id].is_connected = false;
                 printf("[Info] Player %hu disconnected.\n", p->disconnected_player_id);
+                // 다이얼로그가 열려 있다면 업데이트 메시지 전송
+                if (g_hIpInputDlg && IsWindow(g_hIpInputDlg)) {
+                    PostMessage(g_hIpInputDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
+                }
             } else {
                 printf("[Warning] Received SC_DISCONNECT with invalid player ID: %hu\n", p->disconnected_player_id);
             }
@@ -232,7 +237,16 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
 void ClientSystem::HandleAssignID(SC_AssignIDPacket* packet) {
     my_player_id = packet->player_id;
     printf("[Info] Assigned Player ID: %hu\n", my_player_id);
-    // 이제 'my_player_id'를 사용하여 이 클라이언트를 식별할 수 있습니다
+    
+    // 내 플레이어의 연결 상태를 true로 설정
+    if (my_player_id >= 0 && my_player_id < 3) {
+        players[my_player_id].is_connected = true;
+    }
+
+    // 내 ID가 할당되면 리스트 박스 업데이트를 위해 다이얼로그에 메시지 전송
+    if (g_hIpInputDlg && IsWindow(g_hIpInputDlg)) {
+        PostMessage(g_hIpInputDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
+    }
 }
 
 void ClientSystem::HandleEvent(SC_EventPacket* packet) {
@@ -268,7 +282,16 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
             players[i].Walk_state = packet->players[i].walk_state;
             players[i].Jump_state = packet->players[i].jump_state;
             players[i].frame_counter = packet->players[i].frame_counter;
-            // players[i].dir = packet->players[i].dir; // dir enum이 달라서 일단 주석처리
+            if (packet->players[i].dir == Direction::LEFT)
+            {
+                players[i].LEFT = true;
+                players[i].RIGHT = false;
+            }
+            else
+            {
+                players[i].LEFT = false;
+                players[i].RIGHT = true;
+            }
         }
     }
 
@@ -402,18 +425,15 @@ void ClientSystem::HandlePlayerJoin(SC_PlayerJoinPacket* packet) {
 
     // 유효한 플레이어 ID인지 확인
     if (joined_player_id >= 0 && joined_player_id < 3) {
-        // 내 자신의 접속 메시지는 무시 (이미 연결되어 있다고 가정)
-        if (joined_player_id == my_player_id) {
-            printf("[Info] Received SC_PLAYER_JOIN for self (ID: %hu), ignoring.\n", joined_player_id);
-            return;
-        }
-
         // 해당 플레이어의 연결 상태를 true로 설정
         // GameManager.h에 정의된 Player 구조체의 is_connected 필드를 사용
         players[joined_player_id].is_connected = true;
         printf("[Info] Player %hu has joined the game.\n", joined_player_id);
 
-        // GUI 업데이트를 위해 필요한 경우, 여기에 추가적인 로직 (예: UI 매니저 호출)을 추가할 수 있습니다.
+        // 다이얼로그가 열려 있다면 업데이트 메시지 전송
+        if (g_hIpInputDlg && IsWindow(g_hIpInputDlg)) {
+            PostMessage(g_hIpInputDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
+        }
     } else {
         printf("[Warning] Received SC_PLAYER_JOIN with invalid player ID: %hu\n", joined_player_id);
     }

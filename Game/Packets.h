@@ -358,6 +358,7 @@ public:
     Point pos;
     int walk_state;
     int jump_state;
+    int frame_counter; // 프레임 카운터 추가
     Direction dir;
 
     CS_PlayerUpdatePacket() {
@@ -367,6 +368,7 @@ public:
         pos = { 0, 0 };
         walk_state = 0;
         jump_state = 0;
+        frame_counter = 0;
         dir = (Direction)0;
     }
 
@@ -378,9 +380,17 @@ public:
 
         pos = { player->x, player->y };
 
-        walk_state = 0;
-        jump_state = 0;
-        dir = (Direction)0;
+        walk_state = player->Walk_state;
+        jump_state = player->jump_count;
+        frame_counter = player->frame_counter;
+        
+        if (player->LEFT)
+        {
+            dir = Direction::LEFT;
+        }
+        else {
+            dir = Direction::RIGHT;
+        }
     }
 
     void Encode() {
@@ -390,6 +400,7 @@ public:
         pos.y = htonl(pos.y);
         walk_state = htonl(walk_state);
         jump_state = htonl(jump_state);
+        frame_counter = htonl(frame_counter);
         dir = (Direction)htonl((int)dir);
     }
 
@@ -400,6 +411,7 @@ public:
         pos.y = ntohl(pos.y);
         walk_state = ntohl(walk_state);
         jump_state = ntohl(jump_state);
+        frame_counter = ntohl(frame_counter);
         dir = (Direction)ntohl((int)dir);
     }
 

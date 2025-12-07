@@ -288,7 +288,21 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
 
     p.x = packet->pos.x;
     p.y = packet->pos.y;
-    // 충돌 체크에 필요한 사각형 갱신
+    p.Walk_state = packet->walk_state;
+    p.jump_count = packet->jump_state;
+    p.frame_counter = packet->frame_counter;
+
+    if (packet->dir == Direction::LEFT)
+    {
+        p.LEFT = true;
+        p.RIGHT = false;
+    }
+    else
+    {
+        p.LEFT = false;
+        p.RIGHT = true;
+    }
+
     p.player_rt = { p.x - Size, p.y - Size, p.x + Size, p.y + Size };
 }
 
@@ -332,13 +346,13 @@ void ServerSystem::UpdateAllPositions()
     RECT desk_rt = { 0,0,1920,1080 };
 
     // 플레이어 서버 authoritative 이동
-    for (int i = 0; i < MAX_PLAYERS; i++)
-    {
-        if (m_clients[i] != INVALID_SOCKET)
-        {
-            Player_Move(&server_players[i], desk_rt);
-        }
-    }
+    //for (int i = 0; i < MAX_PLAYERS; i++)
+    //{
+    //    if (m_clients[i] != INVALID_SOCKET)
+    //    {
+    //        Player_Move(&server_players[i], desk_rt);
+    //    }
+    //}
 
     // 적 이동 처리
     for (int i = 0; i < server_map[now_map].enemy_count; i++)
@@ -436,7 +450,13 @@ bool ServerSystem::BroadcastGameState()
         p.players[i].life = src.player_life;
         p.players[i].walk_state = src.Walk_state;
         p.players[i].jump_state = src.Jump_state;
-        p.players[i].dir = src.LEFT ? LEFT : RIGHT;
+        if (src.LEFT)
+        {
+            p.players[i].dir = Direction::LEFT;
+        }
+        else{
+            p.players[i].dir = Direction::RIGHT;
+        }
     }
 
     // 클라이언트들에게 전송

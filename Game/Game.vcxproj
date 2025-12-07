@@ -32,8 +32,10 @@
     <ClInclude Include="Packets.h" />
     <ClInclude Include="Player&amp;Enemy.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="resource_ip_dialog.h" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="Game.rc" />
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <ItemGroup>

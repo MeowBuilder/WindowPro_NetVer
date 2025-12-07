@@ -1,4 +1,4 @@
-#ifndef PACKETS_H
+ï»¿#ifndef PACKETS_H
 #define PACKETS_H
 
 #pragma once
@@ -15,7 +15,7 @@
 #include "GameManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
-// --- ÆĞÅ¶ Å¸ÀÔ Á¤ÀÇ ---
+// --- íŒ¨í‚· íƒ€ì… ì •ì˜ ---
 // Client -> Server
 constexpr char CS_UPLOAD_MAP = 0;
 constexpr char CS_START_SESSION_REQ = 1;
@@ -29,58 +29,59 @@ constexpr char SC_MAP_INFO = 12;
 constexpr char SC_GAME_STATE = 13;
 constexpr char SC_EVENT = 14;
 constexpr char SC_DISCONNECT = 15;
+constexpr char SC_PLAYER_JOIN = 16;
 
-// --- ÀÌº¥Æ® Å¸ÀÔ Á¤ÀÇ (ÇÁ·ÎÁ§Æ® °èÈ¹¼­ ±â¹İ) ---
+// --- ì´ë²¤íŠ¸ íƒ€ì… ì •ì˜ (í”„ë¡œì íŠ¸ ê³„íšì„œ ê¸°ë°˜) ---
 enum E_EventType { STAGE_CLEAR, GAME_WIN };
 
 /*
- * --- ÆĞÅ¶ Å¬·¡½º »ç¿ë °¡ÀÌµå  ---
+ * --- íŒ¨í‚· í´ë˜ìŠ¤ ì‚¬ìš© ê°€ì´ë“œ  ---
  *
- * 1. ¼Û½Å (µ¥ÀÌÅÍ º¸³»±â)
- *    - º¸³¾ ÆĞÅ¶ °´Ã¼¸¦ »ı¼ºÇÏ°í ³»¿ëÀ» Ã¤¿ó´Ï´Ù. (¿¹: SC_AssignIDPacket packet(my_id);)
- *    - packet.Encode(); ¸Ş¼Òµå¸¦ È£ÃâÇÏ¿© ÆĞÅ¶ ³»ºÎÀÇ ¸ğµç ÇÊµå¸¦ ³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­·Î º¯È¯ÇÕ´Ï´Ù.
- *    - send() ÇÔ¼ö¸¦ »ç¿ëÇÏ¿© ÆĞÅ¶À» Àü¼ÛÇÕ´Ï´Ù.
- *      - **Áß¿ä**: ±æÀÌ´Â ¹İµå½Ã sizeof(packet)À» »ç¿ëÇØ¾ß ÇÕ´Ï´Ù.
- *      - packet.size ÇÊµå´Â Encode() ÈÄ ³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­·Î º¯°æµÇ¾î ÀÖÀ¸¹Ç·Î ±æÀÌ·Î »ç¿ëÇÏ¸é ¾È µË´Ï´Ù.
+ * 1. ì†¡ì‹  (ë°ì´í„° ë³´ë‚´ê¸°)
+ *    - ë³´ë‚¼ íŒ¨í‚· ê°ì²´ë¥¼ ìƒì„±í•˜ê³  ë‚´ìš©ì„ ì±„ì›ë‹ˆë‹¤. (ì˜ˆ: SC_AssignIDPacket packet(my_id);)
+ *    - packet.Encode(); ë©”ì†Œë“œë¥¼ í˜¸ì¶œí•˜ì—¬ íŒ¨í‚· ë‚´ë¶€ì˜ ëª¨ë“  í•„ë“œë¥¼ ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œë¡œ ë³€í™˜í•©ë‹ˆë‹¤.
+ *    - send() í•¨ìˆ˜ë¥¼ ì‚¬ìš©í•˜ì—¬ íŒ¨í‚·ì„ ì „ì†¡í•©ë‹ˆë‹¤.
+ *      - **ì¤‘ìš”**: ê¸¸ì´ëŠ” ë°˜ë“œì‹œ sizeof(packet)ì„ ì‚¬ìš©í•´ì•¼ í•©ë‹ˆë‹¤.
+ *      - packet.size í•„ë“œëŠ” Encode() í›„ ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œë¡œ ë³€ê²½ë˜ì–´ ìˆìœ¼ë¯€ë¡œ ê¸¸ì´ë¡œ ì‚¬ìš©í•˜ë©´ ì•ˆ ë©ë‹ˆë‹¤.
  *      - send(socket, (char*)&packet, sizeof(packet), 0);
  *
- * 2. ¼ö½Å (µ¥ÀÌÅÍ ¹Ş±â)
- *    - recv() ÇÔ¼ö¸¦ »ç¿ëÇÏ¿© char ¹è¿­(¹öÆÛ)¿¡ µ¥ÀÌÅÍ¸¦ ¹Ş½À´Ï´Ù.
- *    - ¹öÆÛÀÇ ÁÖ¼Ò¸¦ BasePacket Æ÷ÀÎÅÍ·Î Çüº¯È¯ÇÏ¿© type ÇÊµå¸¸ È®ÀÎÇÕ´Ï´Ù.
+ * 2. ìˆ˜ì‹  (ë°ì´í„° ë°›ê¸°)
+ *    - recv() í•¨ìˆ˜ë¥¼ ì‚¬ìš©í•˜ì—¬ char ë°°ì—´(ë²„í¼)ì— ë°ì´í„°ë¥¼ ë°›ìŠµë‹ˆë‹¤.
+ *    - ë²„í¼ì˜ ì£¼ì†Œë¥¼ BasePacket í¬ì¸í„°ë¡œ í˜•ë³€í™˜í•˜ì—¬ type í•„ë“œë§Œ í™•ì¸í•©ë‹ˆë‹¤.
  *      - BasePacket* base_p = (BasePacket*)buffer;
- *    - type¿¡ µû¶ó switch ¹®À¸·Î ºĞ±âÇÕ´Ï´Ù.
- *    - °¢ case ³»ºÎ¿¡¼­ ÇØ´ç Å¸ÀÔÀ¸·Î Ä³½ºÆÃ ÈÄ Decode()¸¦ È£ÃâÇÕ´Ï´Ù.
+ *    - typeì— ë”°ë¼ switch ë¬¸ìœ¼ë¡œ ë¶„ê¸°í•©ë‹ˆë‹¤.
+ *    - ê° case ë‚´ë¶€ì—ì„œ í•´ë‹¹ íƒ€ì…ìœ¼ë¡œ ìºìŠ¤íŒ… í›„ Decode()ë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
  *      - case SC_GAME_STATE:
  *        {
  *            SC_GameStatePacket* p = (SC_GameStatePacket*)buffer;
- *            p->Decode(); // ¼ö½ÅµÈ µ¥ÀÌÅÍÀÇ ¹ÙÀÌÆ® ¼ø¼­¸¦ È£½ºÆ® ¼ø¼­·Î º¯È¯
- *            // ÀÌÁ¦ p->players µî ¸â¹ö¸¦ ¾ÈÀüÇÏ°Ô »ç¿ëÇÕ´Ï´Ù.
+ *            p->Decode(); // ìˆ˜ì‹ ëœ ë°ì´í„°ì˜ ë°”ì´íŠ¸ ìˆœì„œë¥¼ í˜¸ìŠ¤íŠ¸ ìˆœì„œë¡œ ë³€í™˜
+ *            // ì´ì œ p->players ë“± ë©¤ë²„ë¥¼ ì•ˆì „í•˜ê²Œ ì‚¬ìš©í•©ë‹ˆë‹¤.
  *        }
  *        break;
 
  *
- * 3. µğ¹ö±ë
- *    - Æ¯Á¤ ÆĞÅ¶ °´Ã¼(¶Ç´Â Æ÷ÀÎÅÍ)ÀÇ Log() ¸Ş¼Òµå¸¦ È£ÃâÇÏ¿© ÇöÀç ³»¿ëÀ» ÄÜ¼Ö¿¡ Ãâ·ÂÇÒ ¼ö ÀÖ½À´Ï´Ù.
- *      - ¿¹: p->Log();
+ * 3. ë””ë²„ê¹…
+ *    - íŠ¹ì • íŒ¨í‚· ê°ì²´(ë˜ëŠ” í¬ì¸í„°)ì˜ Log() ë©”ì†Œë“œë¥¼ í˜¸ì¶œí•˜ì—¬ í˜„ì¬ ë‚´ìš©ì„ ì½˜ì†”ì— ì¶œë ¥í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+ *      - ì˜ˆ: p->Log();
  */
 
- // --- ÆĞÅ¶ ±¸Á¶Ã¼ Á¤ÀÇ ---
-#pragma pack(push, 1) // ³×Æ®¿öÅ© ÆĞÅ¶ Á÷·ÄÈ­¸¦ À§ÇØ ±¸Á¶Ã¼ ÆĞµùÀ» 1¹ÙÀÌÆ®·Î ¼³Á¤
+// --- íŒ¨í‚· êµ¬ì¡°ì²´ ì •ì˜ ---
+#pragma pack(push, 1) // ë„¤íŠ¸ì›Œí¬ íŒ¨í‚· ì§ë ¬í™”ë¥¼ ìœ„í•´ êµ¬ì¡°ì²´ íŒ¨ë”©ì„ 1ë°”ì´íŠ¸ë¡œ ì„¤ì •
 
-// ¸ğµç ÆĞÅ¶ÀÇ ±â¹İÀÌ µÇ´Â Å¬·¡½º (Non-virtual)
+// ëª¨ë“  íŒ¨í‚·ì˜ ê¸°ë°˜ì´ ë˜ëŠ” í´ë˜ìŠ¤ (Non-virtual)
 class BasePacket {
 public:
-    uint16_t size; // ÆĞÅ¶ÀÇ ÀüÃ¼ Å©±â (size_t -> uint16_t·Î º¯°æ)
-    char type;   // ÆĞÅ¶ÀÇ Á¾·ù
+    uint16_t size; // íŒ¨í‚·ì˜ ì „ì²´ í¬ê¸° (size_t -> uint16_të¡œ ë³€ê²½)
+    char type;   // íŒ¨í‚·ì˜ ì¢…ë¥˜
 
-    // »ı¼ºÀÚ
-    BasePacket() : size(0), type(0) {} // ½ÇÁ¦ Å©±â¿Í Å¸ÀÔÀº ÆÄ»ı Å¬·¡½º¿¡¼­ ¼³Á¤
+    // ìƒì„±ì
+    BasePacket() : size(0), type(0) {} // ì‹¤ì œ í¬ê¸°ì™€ íƒ€ì…ì€ íŒŒìƒ í´ë˜ìŠ¤ì—ì„œ ì„¤ì •
 };
 
-// [S->C] ¼­¹ö°¡ Å¬¶óÀÌ¾ğÆ®¿¡°Ô °íÀ¯ ID¸¦ ÇÒ´çÇÏ´Â ÆĞÅ¶
+// [S->C] ì„œë²„ê°€ í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ê³ ìœ  IDë¥¼ í• ë‹¹í•˜ëŠ” íŒ¨í‚·
 class SC_AssignIDPacket : public BasePacket {
 public:
-    u_short player_id; // ÇÃ·¹ÀÌ¾î¿¡°Ô ÇÒ´çµÉ °íÀ¯ ID
+    u_short player_id; // í”Œë ˆì´ì–´ì—ê²Œ í• ë‹¹ë  ê³ ìœ  ID
 
     SC_AssignIDPacket() {
         size = sizeof(SC_AssignIDPacket);
@@ -109,7 +110,7 @@ public:
     }
 };
 
-// [S->C] ¸Ê ¾÷·Îµå °á°ú¸¦ Å¬¶óÀÌ¾ğÆ®¿¡°Ô ÀÀ´äÇÏ´Â ÆĞÅ¶
+// [S->C] ë§µ ì—…ë¡œë“œ ê²°ê³¼ë¥¼ í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ì‘ë‹µí•˜ëŠ” íŒ¨í‚·
 class SC_MapUploadResponsePacket : public BasePacket {
 public:
     bool is_success;
@@ -138,7 +139,7 @@ public:
     }
 };
 
-// [C->S] Å¬¶óÀÌ¾ğÆ®°¡ ÆíÁıÇÑ ¸Ê Á¤º¸¸¦ ¼­¹ö·Î ¾÷·ÎµåÇÏ´Â ÆĞÅ¶
+// [C->S] í´ë¼ì´ì–¸íŠ¸ê°€ í¸ì§‘í•œ ë§µ ì •ë³´ë¥¼ ì„œë²„ë¡œ ì—…ë¡œë“œí•˜ëŠ” íŒ¨í‚·
 class CS_UploadMapPacket : public BasePacket {
 public:
     Map UploadMap;
@@ -201,7 +202,7 @@ public:
             UploadMap.enemys[i].move_state = htonl(UploadMap.enemys[i].move_state);
             UploadMap.enemys[i].on_block = htonl(UploadMap.enemys[i].on_block);
         }
-
+        
         UploadMap.boss.x = htonl(UploadMap.boss.x);
         UploadMap.boss.y = htonl(UploadMap.boss.y);
         ConvertRectEndian(UploadMap.boss.boss_rect);
@@ -264,20 +265,20 @@ public:
         printf("  Block Count: %d\n", UploadMap.block_count);
         for (int i = 0; i < UploadMap.block_count; ++i) {
             printf("    Block %d: Pos=(%d, %d), Rect=(%ld, %ld, %ld, %ld)\n",
-                i, UploadMap.blocks[i].x, UploadMap.blocks[i].y, UploadMap.blocks[i].Block_rt.left, UploadMap.blocks[i].Block_rt.top, UploadMap.blocks[i].Block_rt.right, UploadMap.blocks[i].Block_rt.bottom);
+                   i, UploadMap.blocks[i].x, UploadMap.blocks[i].y, UploadMap.blocks[i].Block_rt.left, UploadMap.blocks[i].Block_rt.top, UploadMap.blocks[i].Block_rt.right, UploadMap.blocks[i].Block_rt.bottom);
         }
 
         printf("  Object Count: %d\n", UploadMap.object_count);
         for (int i = 0; i < UploadMap.object_count; ++i) {
             printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%ld, %ld, %ld, %ld)\n",
-                i, UploadMap.objects[i].x, UploadMap.objects[i].y, UploadMap.objects[i].obj_type, UploadMap.objects[i].Obj_rt.left, UploadMap.objects[i].Obj_rt.top, UploadMap.objects[i].Obj_rt.right, UploadMap.objects[i].Obj_rt.bottom);
+                   i, UploadMap.objects[i].x, UploadMap.objects[i].y, UploadMap.objects[i].obj_type, UploadMap.objects[i].Obj_rt.left, UploadMap.objects[i].Obj_rt.top, UploadMap.objects[i].Obj_rt.right, UploadMap.objects[i].Obj_rt.bottom);
         }
 
         printf("  Enemy Count: %d\n", UploadMap.enemy_count);
         for (int i = 0; i < UploadMap.enemy_count; ++i) {
             printf("    Enemy %d: Pos=(%d, %d)\n", i, UploadMap.enemys[i].x, UploadMap.enemys[i].y);
         }
-
+        
         printf("  Boss Count: %d\n", UploadMap.boss_count);
         if (UploadMap.boss_count > 0) {
             printf("    Boss: Pos=(%d, %d), Life=%d\n", UploadMap.boss.x, UploadMap.boss.y, UploadMap.boss.life);
@@ -290,15 +291,15 @@ public:
     }
 };
 
-// [C->S] °ÔÀÓ ¼¼¼Ç ½ÃÀÛÀ» ¼­¹ö¿¡ ¿äÃ»ÇÏ´Â ÆĞÅ¶
+// [C->S] ê²Œì„ ì„¸ì…˜ ì‹œì‘ì„ ì„œë²„ì— ìš”ì²­í•˜ëŠ” íŒ¨í‚·
 class CS_StartSessionRequestPacket : public BasePacket {
 public:
-    // ÇöÀç ¼¼¼Ç¿¡¼­ »ç¿ëÇÏ´Â ¸ÊÀÌ ±âº» ¸Ê(0)ÀÎÁö ¿¡µ÷ ¸Ê(99)ÀÎÁö ±¸ºĞ 
-    // ÇöÀç ¼¼¼ÇÀÇ ¸Ê Á¾·ù¿¡ µû¶ó¼­ Å¬¶óÀÌ¾ğÆ®°¡ map_typeÀ» ´Ù¸£°Ô ÀúÀåÇØ¼­ ¼­¹ö·Î Àü¼ÛÇÑ´Ù.
-    // ¼­¹ö¿¡¼­ 0À» ¹ŞÀ¸¸é ÀÚ½ÅÀÌ °¡Áø ±âº» ¸Ê Á¤º¸·Î ¸ÊÀ» Ã¤¿î ÈÄ¿¡ Å¬¶óÀÌ¾ğÆ®·Î Àü¼Û
-    // 99ÀÎ °æ¿ì¿¡´Â ->
-    // Å¬¶óÀÌ¾ğÆ® - ¿¡µ÷ ¸Ê Á¤º¸¸¦ Ã¤¿ì°í CS_UploadMapPacket ¸¦ Àü¼ÛÇÑ ÈÄ¿¡ ¼­¹ö¿¡¼­ º¸³»´Â SC_MapInfoPacket ÆĞÅ¶À» ¹Ş¾Æ¼­ ÃÖÁ¾ ¸Ê »óÅÂ¸¦ ÀúÀå
-    // ¼­¹ö      - Å¬¶ó°¡ º¸³½ ¸Ê Á¤º¸´ë·Î Ã¤¿î ÈÄ¿¡ SC_MapInfoPacket ¸¦ ¸ğµç Å¬¶ó¿¡ Àü¼ÛÇÑ´Ù.
+    // í˜„ì¬ ì„¸ì…˜ì—ì„œ ì‚¬ìš©í•˜ëŠ” ë§µì´ ê¸°ë³¸ ë§µ(0)ì¸ì§€ ì—ë”§ ë§µ(99)ì¸ì§€ êµ¬ë¶„ 
+    // í˜„ì¬ ì„¸ì…˜ì˜ ë§µ ì¢…ë¥˜ì— ë”°ë¼ì„œ í´ë¼ì´ì–¸íŠ¸ê°€ map_typeì„ ë‹¤ë¥´ê²Œ ì €ì¥í•´ì„œ ì„œë²„ë¡œ ì „ì†¡í•œë‹¤.
+    // ì„œë²„ì—ì„œ 0ì„ ë°›ìœ¼ë©´ ìì‹ ì´ ê°€ì§„ ê¸°ë³¸ ë§µ ì •ë³´ë¡œ ë§µì„ ì±„ìš´ í›„ì— í´ë¼ì´ì–¸íŠ¸ë¡œ ì „ì†¡
+    // 99ì¸ ê²½ìš°ì—ëŠ” ->
+    // í´ë¼ì´ì–¸íŠ¸ - ì—ë”§ ë§µ ì •ë³´ë¥¼ ì±„ìš°ê³  CS_UploadMapPacket ë¥¼ ì „ì†¡í•œ í›„ì— ì„œë²„ì—ì„œ ë³´ë‚´ëŠ” SC_MapInfoPacket íŒ¨í‚·ì„ ë°›ì•„ì„œ ìµœì¢… ë§µ ìƒíƒœë¥¼ ì €ì¥
+    // ì„œë²„      - í´ë¼ê°€ ë³´ë‚¸ ë§µ ì •ë³´ëŒ€ë¡œ ì±„ìš´ í›„ì— SC_MapInfoPacket ë¥¼ ëª¨ë“  í´ë¼ì— ì „ì†¡í•œë‹¤.
     u_short map_type;
     CS_StartSessionRequestPacket(u_short maptype) {
         size = sizeof(CS_StartSessionRequestPacket);
@@ -318,10 +319,10 @@ public:
     }
 };
 
-// [C->S] °ÔÀÓ ¼¼¼Ç Á¾·á¸¦ ¼­¹ö¿¡ ¿äÃ»ÇÏ´Â ÆĞÅ¶
+// [C->S] ê²Œì„ ì„¸ì…˜ ì¢…ë£Œë¥¼ ì„œë²„ì— ìš”ì²­í•˜ëŠ” íŒ¨í‚·
 class CS_EndSessionRequestPacket : public BasePacket {
 public:
-    u_short player_id; // ¼¼¼Ç Á¾·á¸¦ ¿äÃ»ÇÏ´Â Å¬¶óÀÌ¾ğÆ®ÀÇ ID
+    u_short player_id; // ì„¸ì…˜ ì¢…ë£Œë¥¼ ìš”ì²­í•˜ëŠ” í´ë¼ì´ì–¸íŠ¸ì˜ ID
 
     CS_EndSessionRequestPacket() {
         size = sizeof(CS_EndSessionRequestPacket);
@@ -350,13 +351,14 @@ public:
     }
 };
 
-// [C->S] Å¬¶óÀÌ¾ğÆ®ÀÇ »óÅÂ(À§Ä¡, ¾Ö´Ï¸ŞÀÌ¼Ç)¸¦ ¼­¹ö·Î Àü¼ÛÇÏ´Â ÆĞÅ¶
+// [C->S] í´ë¼ì´ì–¸íŠ¸ì˜ ìƒíƒœ(ìœ„ì¹˜, ì• ë‹ˆë©”ì´ì…˜)ë¥¼ ì„œë²„ë¡œ ì „ì†¡í•˜ëŠ” íŒ¨í‚·
 class CS_PlayerUpdatePacket : public BasePacket {
 public:
     u_short player_id;
     Point pos;
     int walk_state;
     int jump_state;
+    int frame_counter; // í”„ë ˆì„ ì¹´ìš´í„° ì¶”ê°€
     Direction dir;
 
     CS_PlayerUpdatePacket() {
@@ -366,6 +368,7 @@ public:
         pos = { 0, 0 };
         walk_state = 0;
         jump_state = 0;
+        frame_counter = 0;
         dir = (Direction)0;
     }
 
@@ -377,9 +380,18 @@ public:
 
         pos = { player->x, player->y };
 
-        walk_state = 0;
-        jump_state = 0;
-        dir = (Direction)0;
+        walk_state = player->Walk_state;
+        jump_state = player->jump_count;
+        frame_counter = player->frame_counter;
+        
+        dir = Direction::RIGHT;
+        if (player->LEFT)
+        {
+            dir = Direction::LEFT;
+        }
+        else if (player->RIGHT) {
+            dir = Direction::RIGHT;
+        }
     }
 
     void Encode() {
@@ -389,6 +401,7 @@ public:
         pos.y = htonl(pos.y);
         walk_state = htonl(walk_state);
         jump_state = htonl(jump_state);
+        frame_counter = htonl(frame_counter);
         dir = (Direction)htonl((int)dir);
     }
 
@@ -399,6 +412,7 @@ public:
         pos.y = ntohl(pos.y);
         walk_state = ntohl(walk_state);
         jump_state = ntohl(jump_state);
+        frame_counter = ntohl(frame_counter);
         dir = (Direction)ntohl((int)dir);
     }
 
@@ -408,7 +422,7 @@ public:
     }
 };
 
-// [S->C] È®Á¤µÈ °ÔÀÓ ¸Ê Á¤º¸¸¦ ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô Àü¼ÛÇÏ´Â ÆĞÅ¶
+// [S->C] í™•ì •ëœ ê²Œì„ ë§µ ì •ë³´ë¥¼ ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ì „ì†¡í•˜ëŠ” íŒ¨í‚·
 class SC_MapInfoPacket : public BasePacket {
 public:
     Map mapInfo;
@@ -418,7 +432,7 @@ public:
         type = SC_MAP_INFO;
         memset(&mapInfo, 0, sizeof(Map));
     }
-
+    
     void Init(const Map& map) {
         mapInfo = map;
         // Ensure size and type are set correctly after initialization
@@ -471,7 +485,7 @@ public:
             mapInfo.enemys[i].move_state = htonl(mapInfo.enemys[i].move_state);
             mapInfo.enemys[i].on_block = htonl(mapInfo.enemys[i].on_block);
         }
-
+        
         mapInfo.boss.x = htonl(mapInfo.boss.x);
         mapInfo.boss.y = htonl(mapInfo.boss.y);
         ConvertRectEndian(mapInfo.boss.boss_rect);
@@ -534,20 +548,20 @@ public:
         printf("  Block Count: %d\n", mapInfo.block_count);
         for (int i = 0; i < mapInfo.block_count; ++i) {
             printf("    Block %d: Pos=(%d, %d), Rect=(%ld, %ld, %ld, %ld)\n",
-                i, mapInfo.blocks[i].x, mapInfo.blocks[i].y, mapInfo.blocks[i].Block_rt.left, mapInfo.blocks[i].Block_rt.top, mapInfo.blocks[i].Block_rt.right, mapInfo.blocks[i].Block_rt.bottom);
+                   i, mapInfo.blocks[i].x, mapInfo.blocks[i].y, mapInfo.blocks[i].Block_rt.left, mapInfo.blocks[i].Block_rt.top, mapInfo.blocks[i].Block_rt.right, mapInfo.blocks[i].Block_rt.bottom);
         }
 
         printf("  Object Count: %d\n", mapInfo.object_count);
         for (int i = 0; i < mapInfo.object_count; ++i) {
             printf("    Object %d: Pos=(%d, %d), Type=%d, Rect=(%ld, %ld, %ld, %ld)\n",
-                i, mapInfo.objects[i].x, mapInfo.objects[i].y, mapInfo.objects[i].obj_type, mapInfo.objects[i].Obj_rt.left, mapInfo.objects[i].Obj_rt.top, mapInfo.objects[i].Obj_rt.right, mapInfo.objects[i].Obj_rt.bottom);
+                   i, mapInfo.objects[i].x, mapInfo.objects[i].y, mapInfo.objects[i].obj_type, mapInfo.objects[i].Obj_rt.left, mapInfo.objects[i].Obj_rt.top, mapInfo.objects[i].Obj_rt.right, mapInfo.objects[i].Obj_rt.bottom);
         }
 
         printf("  Enemy Count: %d\n", mapInfo.enemy_count);
         for (int i = 0; i < mapInfo.enemy_count; ++i) {
             printf("    Enemy %d: Pos=(%d, %d)\n", i, mapInfo.enemys[i].x, mapInfo.enemys[i].y);
         }
-
+        
         printf("  Boss Count: %d\n", mapInfo.boss_count);
         if (mapInfo.boss_count > 0) {
             printf("    Boss: Pos=(%d, %d), Life=%d\n", mapInfo.boss.x, mapInfo.boss.y, mapInfo.boss.life);
@@ -560,15 +574,15 @@ public:
     }
 };
 
-// [S->C] Æ¯Á¤ °ÔÀÓ ÀÌº¥Æ®¸¦ ¾Ë¸®´Â ÆĞÅ¶
+// [S->C] íŠ¹ì • ê²Œì„ ì´ë²¤íŠ¸ë¥¼ ì•Œë¦¬ëŠ” íŒ¨í‚·
 class SC_EventPacket : public BasePacket {
 public:
-    E_EventType event_type; // ¹ß»ıÇÑ ÀÌº¥Æ®ÀÇ Á¾·ù
+    E_EventType event_type; // ë°œìƒí•œ ì´ë²¤íŠ¸ì˜ ì¢…ë¥˜
 
     SC_EventPacket() {
         size = sizeof(SC_EventPacket);
         type = SC_EVENT;
-        event_type = STAGE_CLEAR; // ±âº»°ª ¼³Á¤
+        event_type = STAGE_CLEAR; // ê¸°ë³¸ê°’ ì„¤ì •
     }
 
     SC_EventPacket(E_EventType event) {
@@ -579,7 +593,7 @@ public:
 
     void Encode() {
         size = htons(size);
-        event_type = (E_EventType)htonl(event_type); // enumµµ int·Î °£ÁÖÇÏ¿© º¯È¯
+        event_type = (E_EventType)htonl(event_type); // enumë„ intë¡œ ê°„ì£¼í•˜ì—¬ ë³€í™˜
     }
 
     void Decode() {
@@ -592,10 +606,10 @@ public:
     }
 };
 
-// [S->C] ´Ù¸¥ ÇÃ·¹ÀÌ¾îÀÇ Á¢¼Ó Á¾·á¸¦ ¾Ë¸®´Â ÆĞÅ¶
+// [S->C] ë‹¤ë¥¸ í”Œë ˆì´ì–´ì˜ ì ‘ì† ì¢…ë£Œë¥¼ ì•Œë¦¬ëŠ” íŒ¨í‚·
 class SC_DisconnectPacket : public BasePacket {
 public:
-    u_short disconnected_player_id; // Á¢¼Ó Á¾·áÇÑ ÇÃ·¹ÀÌ¾îÀÇ ID
+    u_short disconnected_player_id; // ì ‘ì† ì¢…ë£Œí•œ í”Œë ˆì´ì–´ì˜ ID
 
     SC_DisconnectPacket() {
         size = sizeof(SC_DisconnectPacket);
@@ -624,7 +638,39 @@ public:
     }
 };
 
-// [S->C] ½Ç½Ã°£ °ÔÀÓ »óÅÂ µ¿±âÈ­ ÆĞÅ¶
+// [S->C] ìƒˆë¡œìš´ í”Œë ˆì´ì–´ì˜ ì ‘ì†ì„ ì•Œë¦¬ëŠ” íŒ¨í‚·
+class SC_PlayerJoinPacket : public BasePacket {
+public:
+    u_short joined_player_id; // ìƒˆë¡œ ì ‘ì†í•œ í”Œë ˆì´ì–´ì˜ ID
+
+    SC_PlayerJoinPacket() {
+        size = sizeof(SC_PlayerJoinPacket);
+        type = SC_PLAYER_JOIN;
+        joined_player_id = (u_short)-1;
+    }
+
+    SC_PlayerJoinPacket(u_short id) {
+        size = sizeof(SC_PlayerJoinPacket);
+        type = SC_PLAYER_JOIN;
+        joined_player_id = id;
+    }
+
+    void Encode() {
+        size = htons(size);
+        joined_player_id = htons(joined_player_id);
+    }
+
+    void Decode() {
+        size = ntohs(size);
+        joined_player_id = ntohs(joined_player_id);
+    }
+
+    void Log() const {
+        printf("[SC_PlayerJoinPacket] Type: %d, Size: %hu, JoinedPlayerID: %hu\n", type, size, joined_player_id);
+    }
+};
+
+// [S->C] ì‹¤ì‹œê°„ ê²Œì„ ìƒíƒœ ë™ê¸°í™” íŒ¨í‚·
 class SC_GameStatePacket : public BasePacket {
 public:
     struct PlayerState {
@@ -669,19 +715,19 @@ public:
             players[i].walk_state = htonl(players[i].walk_state);
             players[i].jump_state = htonl(players[i].jump_state);
             players[i].frame_counter = htonl(players[i].frame_counter);
-            players[i].dir = (Direction)htonl(players[i].dir);
+            players[i].dir = (Direction) htonl(players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             enemies[i].pos.x = htonl(enemies[i].pos.x);
             enemies[i].pos.y = htonl(enemies[i].pos.y);
-            enemies[i].dir = (Direction)htonl(enemies[i].dir);
+            enemies[i].dir = (Direction) htonl(enemies[i].dir);
             enemies[i].move_state = htonl(enemies[i].move_state); // Fixed typo
         }
         boss.pos.x = htonl(boss.pos.x);
         boss.pos.y = htonl(boss.pos.y);
         boss.life = htonl(boss.life);
         boss.attack_time = htonl(boss.attack_time);
-        boss.dir = (Direction)htonl(boss.dir);
+        boss.dir = (Direction) htonl(boss.dir);
     }
 
     void Decode() {
@@ -713,18 +759,18 @@ public:
         for (int i = 0; i < 3; ++i) {
             if (!players[i].is_connected) continue;
             printf("  Player %d: Pos=(%d, %d), Life=%d, Walk=%d, Jump=%d, Frame=%d, Dir=%d\n",
-                i, players[i].pos.x, players[i].pos.y, players[i].life,
-                players[i].walk_state, players[i].jump_state, players[i].frame_counter, players[i].dir);
+                   i, players[i].pos.x, players[i].pos.y, players[i].life,
+                   players[i].walk_state, players[i].jump_state, players[i].frame_counter, players[i].dir);
         }
         for (int i = 0; i < 32; ++i) {
             if (enemies[i].is_alive) {
                 printf("  Enemy %d: Pos=(%d, %d), Dir=%d, MoveState=%d\n",
-                    i, enemies[i].pos.x, enemies[i].pos.y, enemies[i].dir, enemies[i].move_state);
+                       i, enemies[i].pos.x, enemies[i].pos.y, enemies[i].dir, enemies[i].move_state);
             }
         }
         if (boss.is_active) {
             printf("  Boss: Pos=(%d, %d), Life=%d, AttackTime=%d, Dir=%d\n",
-                boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
+                   boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
         }
     }
 };

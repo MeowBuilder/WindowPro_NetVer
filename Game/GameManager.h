@@ -12,6 +12,11 @@ struct Point
 	int y;
 };
 
+enum Direction {
+	LEFT,
+	RIGHT
+};
+
 typedef struct {
 	u_short player_id;
 	bool is_connected;
@@ -24,11 +29,6 @@ typedef struct {
 	int player_life;
 	int frame_counter; // 프레임 카운터 추가
 }Player;
-
-enum Direction {
-	LEFT,
-	RIGHT
-};
 
 typedef struct {
 	int x, y;

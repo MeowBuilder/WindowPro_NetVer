@@ -7,6 +7,9 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+// 전역 변수 선언 (ClientSystem에서 접근하기 위함)
+extern HWND g_hIpInputDlg;
+
 class ClientSystem {
 public:
     ClientSystem();
@@ -23,6 +26,7 @@ public:
     Map GetMap();
 
     Player* getPlayer(int player_id) { return &players[player_id]; };
+    SOCKET getSocket() { return sock; };
 
     // 게임 상태
     u_short my_player_id;

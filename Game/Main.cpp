@@ -49,6 +49,9 @@ bool Clear;
 int width = 1920;
 int height = 1080;
 
+HWND g_hIpInputDlg = NULL; // 전역 HWND로 선언
+HWND MainWindow = NULL; // 전역 HWND로 선언
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam);
 void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 void CreateButtons(HWND hWnd, HBITMAP Start_bitmap, HBITMAP Exit_bitmap, HBITMAP Edit_bitmap);
@@ -94,30 +97,86 @@ void CreateButtons(HWND hWnd, HBITMAP Start_bitmap, HBITMAP Exit_bitmap, HBITMAP
 	SendMessage(hEditButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)Edit_bitmap);
 }
 
+// 전역 변수: IP 입력 다이얼로그의 핸들 (ClientSystem에서 접근하기 위함)
+extern HWND g_hIpInputDlg; 
+
 INT_PTR CALLBACK IPInputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
-        case WM_INITDIALOG:
-            
+        case WM_INITDIALOG: {
+            SetWindowText(hDlg, L"서버 접속 및 대기"); // 다이얼로그 캡션 변경
             SetDlgItemTextW(hDlg, IDC_IPADDRESS_EDIT, szServerIP_wc);
+            EnableWindow(GetDlgItem(hDlg, IDOK_START_GAME), FALSE); // 게임 시작 버튼 비활성화
             return TRUE;
+        }
 
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
-                case IDOK_CONNECT: {
-                    
+                case IDOK_CONNECT: { // "접속" 버튼
+                    if (client.getSocket() != INVALID_SOCKET) { // 이미 연결되어 있다면
+                        MessageBox(hDlg, L"이미 서버에 접속되어 있습니다.", L"정보", MB_OK | MB_ICONINFORMATION);
+                        return TRUE;
+                    }
+
                     wchar_t tempIP_wc[16];
                     GetDlgItemTextW(hDlg, IDC_IPADDRESS_EDIT, tempIP_wc, _countof(tempIP_wc));
                     wcsncpy_s(szServerIP_wc, _countof(szServerIP_wc), tempIP_wc, _TRUNCATE);
-                    EndDialog(hDlg, IDOK_CONNECT);
+
+                    size_t num_chars_converted;
+                    wcstombs_s(&num_chars_converted, szServerIP_mb, _countof(szServerIP_mb), szServerIP_wc, _TRUNCATE);
+
+                    if (client.Connect(szServerIP_mb, 9000)) {
+                        MessageBox(hDlg, L"서버 접속 성공!", L"정보", MB_OK | MB_ICONINFORMATION);
+                        EnableWindow(GetDlgItem(hDlg, IDC_IPADDRESS_EDIT), FALSE); // IP 입력창 비활성화
+                        EnableWindow(GetDlgItem(hDlg, IDOK_CONNECT), FALSE);     // 접속 버튼 비활성화
+                        EnableWindow(GetDlgItem(hDlg, IDOK_START_GAME), TRUE);    // 게임 시작 버튼 활성화
+                        client.StartRecvThread();
+                        // 내 플레이어 ID를 리스트 박스에 추가
+                        SendMessage(hDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
+                    } else {
+                        MessageBox(hDlg, L"서버 접속 실패!", L"오류", MB_OK | MB_ICONERROR);
+                    }
                     return TRUE;
                 }
-                case IDCANCEL_CONNECT:
-                    EndDialog(hDlg, IDCANCEL_CONNECT);
+                case IDOK_START_GAME: { // "게임 시작" 버튼
+                    // 이 다이얼로그를 닫고 WinMain에서 게임 시작을 진행하도록 신호를 보냅니다.
+                    DestroyWindow(hDlg);
+                    g_hIpInputDlg = NULL; // 전역 핸들 초기화
+					ShowWindow(MainWindow, SW_SHOW);
+                    return TRUE;
+                }
+                case IDCANCEL_CONNECT: // "취소" 버튼
+                    client.Disconnect(); // 연결 해제 시도
+                    DestroyWindow(hDlg);
+                    g_hIpInputDlg = NULL; // 전역 핸들 초기화
+                    PostQuitMessage(0); // 애플리케이션 종료
                     return TRUE;
             }
             break;
-        case WM_CLOSE:
-            EndDialog(hDlg, IDCANCEL_CONNECT);
+        
+        case WM_USER_UPDATE_PLAYER_LIST: {
+            // 플레이어 목록 리스트 박스 업데이트
+            HWND hListBox = GetDlgItem(hDlg, IDC_PLAYER_LIST);
+            SendMessage(hListBox, LB_RESETCONTENT, 0, 0); // 기존 목록 지우기
+
+            for (int i = 0; i < 3; ++i) { // 최대 3명의 플레이어
+                if (client.getPlayer(i)->is_connected) {
+                    wchar_t playerInfo[50];
+                    if (client.my_player_id == i) {
+                        swprintf_s(playerInfo, _countof(playerInfo), L"Player ID: %d (나)", i);
+                    } else {
+                        swprintf_s(playerInfo, _countof(playerInfo), L"Player ID: %d", i);
+                    }
+                    SendMessage(hListBox, LB_ADDSTRING, 0, (LPARAM)playerInfo);
+                }
+            }
+            return TRUE;
+        }
+
+        case WM_CLOSE: // 다이얼로그의 X 버튼
+            client.Disconnect();
+            DestroyWindow(hDlg);
+            g_hIpInputDlg = NULL; // 전역 핸들 초기화
+            PostQuitMessage(0);
             return TRUE;
     }
     return FALSE;
@@ -130,32 +189,22 @@ INT_PTR CALLBACK IPInputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 	selected_map = 0;
 	Desk_rect = { 0,0,1920,1080 };
 
-    // 윈속 초기화 (DialogBoxParam 호출 전에 필요할 수 있음)
+    // 윈속 초기화
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
         return 1;
 
-    // IP 입력 Dialog 표시
-    INT_PTR dialogResult = DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_IP_INPUT), NULL, IPInputDlgProc, 0);
+    // IP 입력 Dialog 표시 (모달리스로 변경)
+    g_hIpInputDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_IP_INPUT), NULL, IPInputDlgProc, 0);
 
-    if (dialogResult == IDOK_CONNECT) {
-        // Wide-character IP를 Multi-byte IP로 변환
-        size_t num_chars_converted;
-        wcstombs_s(&num_chars_converted, szServerIP_mb, _countof(szServerIP_mb), szServerIP_wc, _TRUNCATE);
-
-        // IP가 성공적으로 입력되었으므로 연결 시도
-        if (!client.Connect(szServerIP_mb, 9000)) {
-            MessageBoxA(NULL, "Failed to connect to server. Exiting.", "Connection Error", MB_OK | MB_ICONERROR);
-            WSACleanup();
-            return 1; // 종료
-        }
-        client.StartRecvThread();
-    } else {
-        // 사용자가 취소했거나 Dialog 닫음
+    if (!g_hIpInputDlg) {
+        MessageBox(NULL, L"Failed to create IP Input Dialog.", L"Error", MB_OK | MB_ICONERROR);
         WSACleanup();
-        return 0; // 정상 종료
+        return 1;
     }
-    
+    ShowWindow(g_hIpInputDlg, SW_SHOW); // 다이얼로그 보여주기
+
+    // WNDCLASSEX 등록
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -177,9 +226,9 @@ INT_PTR CALLBACK IPInputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
         return 1;
     }
 
-	HWND hWnd = CreateWindow(L"WindowClass", L"WindowPro", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
+	MainWindow = CreateWindow(L"WindowClass", L"WindowPro", WS_OVERLAPPEDWINDOW, (Desk_rect.right / 2) - 400, (Desk_rect.bottom / 2) - 300, 800, 600, nullptr, nullptr, hInstance, nullptr);
 
-    if (!hWnd) {
+    if (!MainWindow) {
         MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
         // 클라이언트 연결 해제 및 윈속 정리
         client.Disconnect();
@@ -187,13 +236,23 @@ INT_PTR CALLBACK IPInputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
         return 1;
     }
 
-    ShowWindow(hWnd, nCmdShow);
-    UpdateWindow(hWnd);
+    ShowWindow(MainWindow, SW_HIDE);
+    UpdateWindow(MainWindow);
+
+	if (!MainWindow) {
+		MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
+		client.Disconnect();
+		WSACleanup();
+		return 1;
+	}
 
     MSG msg;
+    // 모달리스 다이얼로그를 위한 메시지 루프 수정
     while (GetMessage(&msg, nullptr, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (g_hIpInputDlg == NULL || !IsDialogMessage(g_hIpInputDlg, &msg)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
     }
 
     // 윈속 종료
