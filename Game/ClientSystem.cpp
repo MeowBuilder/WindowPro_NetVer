@@ -292,6 +292,7 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
                 players[i].LEFT = false;
                 players[i].RIGHT = true;
             }
+            players[i].window_move = packet->players[i].window_move;
         }
     }
 

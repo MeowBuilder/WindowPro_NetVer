@@ -28,6 +28,8 @@ typedef struct {
 	RECT player_rt;
 	int player_life;
 	int frame_counter; // 프레임 카운터 추가
+
+	bool window_move;
 }Player;
 
 typedef struct {

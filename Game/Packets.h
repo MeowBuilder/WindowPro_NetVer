@@ -360,6 +360,7 @@ public:
     int jump_state;
     int frame_counter; // 프레임 카운터 추가
     Direction dir;
+    bool p_window_mv;
 
     CS_PlayerUpdatePacket() {
         size = sizeof(CS_PlayerUpdatePacket);
@@ -370,6 +371,7 @@ public:
         jump_state = 0;
         frame_counter = 0;
         dir = (Direction)0;
+        p_window_mv = true;
     }
 
     CS_PlayerUpdatePacket(u_short id, Player* player)
@@ -391,6 +393,7 @@ public:
         else {
             dir = Direction::RIGHT;
         }
+        p_window_mv = player->window_move;
     }
 
     void Encode() {
@@ -680,6 +683,7 @@ public:
         int jump_state;
         int frame_counter;
         Direction dir;
+        bool window_move;
     } players[3];
 
     struct EnemyState {

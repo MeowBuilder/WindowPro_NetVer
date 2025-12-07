@@ -28,6 +28,7 @@ typedef struct {
     int player_life;
     int frame_counter;
 
+    bool window_move;
 } Player;
 
 // ==== Direction ==== //

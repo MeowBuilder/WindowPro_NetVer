@@ -42,8 +42,6 @@ int selected_map;
 
 Player player;
 
-bool window_move;
-
 bool Clear;
 
 int width = 1920;
@@ -561,7 +559,7 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	case 1:
 		//hPlayer->x--;
 
-		if (window_move)
+		if (hPlayer->window_move)
 		{
 			MoveWindow(hWnd, std::clamp(hPlayer->x - (wnd_rt.right / 2), (long)0, (long)Desk_rect.right - (wnd_rt.right)), hPlayer->y - (wnd_rt.bottom / 2), 320, 320, true);
 		}
@@ -657,7 +655,7 @@ void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 	case 1:
 		//hPlayer->x++;
 
-		if (window_move)
+		if (hPlayer->window_move)
 		{
 			MoveWindow(hWnd, std::clamp(hPlayer->x - (wnd_rt.right / 2), (long)0, (long)Desk_rect.right - (wnd_rt.right)), hPlayer->y - (wnd_rt.bottom / 2), 320, 320, true);
 		}
@@ -750,7 +748,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		BGN_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP11));
 		Tino_bitmap = LoadBitmap(g_hinst, MAKEINTRESOURCE(IDB_BITMAP9));
 
-		window_move = true;
+		player.window_move = true;
 		player.player_life = 3;
 
 		// Desk_rect 초기화
@@ -766,7 +764,7 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	case WM_KEYDOWN:
 		switch (wParam) {
 		case VK_CONTROL:
-			window_move = !window_move;
+			player.window_move = !player.window_move;
 			break;
 		case VK_LEFT:
 			player.LEFT = true;
@@ -918,7 +916,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			player.y = map.P_Start_Loc[client.my_player_id].y;
 			player.DOWN = false;
 			player.is_in_air = false;
-			window_move = true;
+			player.window_move = true;
 			player.player_life--;
 		}
 
@@ -981,7 +979,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
-					window_move = true;
+					player.window_move = true;
 
 					player.player_life--;
 					break;
@@ -997,7 +995,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
-					window_move = true;
+					player.window_move = true;
 					break;
 				default:
 					break;
@@ -1021,7 +1019,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 						player.y = map.P_Start_Loc[0].y;
 						player.DOWN = false;
 						player.is_in_air = false;
-						window_move = true;
+						player.window_move = true;
 
 						player.player_life--;
 					}
@@ -1035,7 +1033,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			Update_Enemy_rect(&map.enemys[i]);
 		}
 
-		if (window_move)
+		if (player.window_move)
 		{
 			MoveWindow(hWnd, std::clamp(player.x - (wnd_rt.right / 2),(long)0, (long)Desk_rect.right - (wnd_rt.right)), player.y - (wnd_rt.bottom / 2), 320, 320, true);
 		}
@@ -1115,7 +1113,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
-					window_move = true;
+					player.window_move = true;
 					player.player_life++;
 				}
 				else
@@ -1124,7 +1122,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.y = map.P_Start_Loc[0].y;
 					player.DOWN = false;
 					player.is_in_air = false;
-					window_move = true;
+					player.window_move = true;
 
 					player.player_life--;
 				}

@@ -304,6 +304,8 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
     }
 
     p.player_rt = { p.x - Size, p.y - Size, p.x + Size, p.y + Size };
+
+    p.window_move = packet->p_window_mv;
 }
 
 #pragma endregion
@@ -395,8 +397,6 @@ void ServerSystem::CheckAllCollisions()
 
 #pragma endregion
 
-
-
 #pragma region Send Functions
 
 // 업로드 성공/실패 응답 보내기
@@ -457,6 +457,8 @@ bool ServerSystem::BroadcastGameState()
         else{
             p.players[i].dir = Direction::RIGHT;
         }
+
+        p.players[i].window_move = src.window_move;
     }
 
     // 클라이언트들에게 전송
