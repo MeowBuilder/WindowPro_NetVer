@@ -47,6 +47,13 @@ bool Clear;
 int width = 1920;
 int height = 1080;
 
+//======================================================================
+// 남은 문제(클라기준) Eidt -> Start하면 깃발 먹을때 Edit으로 튕김
+// 디스커넥트 핸들링(서버 꺼졌을 때 작동), SendEndSessionRequest
+// 다른 사람 연결 없을때 창 없애기, 접속하지 않은 사람 창 안띄우기
+// 보스전 체력 동기화 오류, GameWin이벤트 만들기
+//======================================================================
+
 HWND g_hIpInputDlg = NULL; // 전역 HWND로 선언
 HWND MainWindow = NULL; // 전역 HWND로 선언
 
@@ -1041,8 +1048,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		
 		for (int i = 0; i < map.enemy_count; i++)
 		{
-			Move_Enemy(&map.enemys[i], map.blocks[map.enemys[i].on_block], 3);
-			Update_Enemy_rect(&map.enemys[i]);
+			//Move_Enemy(&map.enemys[i], map.blocks[map.enemys[i].on_block], 3);
+			//Update_Enemy_rect(&map.enemys[i]);
 		}
 
 		if (player.window_move)

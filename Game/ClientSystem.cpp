@@ -310,15 +310,15 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
 
     // 2. 적 상태 업데이트
     Map& current_map = m_maps[current_map_index];
-    for (int i = 0; i < current_map.enemy_count; ++i) {
-        current_map.enemys[i].is_alive = packet->enemies[i].is_alive;
-        if (current_map.enemys[i].is_alive) {
-            current_map.enemys[i].x = packet->enemies[i].pos.x;
-            current_map.enemys[i].y = packet->enemies[i].pos.y;
-            current_map.enemys[i].direction = packet->enemies[i].dir;
-            current_map.enemys[i].move_state = packet->enemies[i].move_state;
-        }
-    }
+    //for (int i = 0; i < current_map.enemy_count; ++i) {
+    //    current_map.enemys[i].is_alive = packet->enemies[i].is_alive;
+    //    if (current_map.enemys[i].is_alive) {
+    //        current_map.enemys[i].x = packet->enemies[i].pos.x;
+    //        current_map.enemys[i].y = packet->enemies[i].pos.y;
+    //        current_map.enemys[i].direction = packet->enemies[i].dir;
+    //        current_map.enemys[i].move_state = packet->enemies[i].move_state;
+    //    }
+    //}
 
     // 3. 보스 상태 업데이트
     if (current_map.boss_count > 0) {
