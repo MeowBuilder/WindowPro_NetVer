@@ -23,7 +23,9 @@ public:
     void SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet);
     bool SendPlayerUpdatePacket(Player* player);
     bool SendEndSessionRequestPacket();
-    Map GetMap();
+    Map GetMap(int index = -1);
+    void SwitchToNextMap();
+    int GetCurrentMapIndex() const { return current_map_index; }
 
     Player* getPlayer(int player_id) { return &players[player_id]; };
     SOCKET getSocket() { return sock; };
@@ -42,7 +44,8 @@ private:
     SOCKET sock;
     HANDLE hRecvThread;
     char recv_buffer[12000];
-    Map m_map;
+    Map m_maps[4];
+    int current_map_index;
     CRITICAL_SECTION m_map_cs;
 
     HANDLE maprecvEvent;

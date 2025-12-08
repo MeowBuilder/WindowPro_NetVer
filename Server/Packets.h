@@ -428,15 +428,18 @@ public:
 class SC_MapInfoPacket : public BasePacket {
 public:
     Map mapInfo;
+    char map_index;
 
     SC_MapInfoPacket() {
         size = sizeof(SC_MapInfoPacket);
         type = SC_MAP_INFO;
         memset(&mapInfo, 0, sizeof(Map));
+        map_index = 0;
     }
     
-    void Init(const Map& map) {
+    void Init(const Map& map, char index = 0) {
         mapInfo = map;
+        map_index = index;
         // Ensure size and type are set correctly after initialization
         size = sizeof(SC_MapInfoPacket);
         type = SC_MAP_INFO;
@@ -545,7 +548,7 @@ public:
     }
 
     void Log() const {
-        printf("[SC_MapInfoPacket] Type: %d, Size: %hu\n", type, size);
+        printf("[SC_MapInfoPacket] Type: %d, Size: %hu, MapIndex: %d\n", type, size, map_index);
         printf("  Map Width: %d, Map Height: %d\n", mapInfo.Map_width, mapInfo.Map_height);
         printf("  Block Count: %d\n", mapInfo.block_count);
         for (int i = 0; i < mapInfo.block_count; ++i) {

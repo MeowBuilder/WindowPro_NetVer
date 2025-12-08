@@ -905,6 +905,18 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
+
+	if (client.GetCurrentMapIndex() != selected_map && selected_map != 99)
+	{
+		selected_map = client.GetCurrentMapIndex();
+		map = client.GetMap(selected_map);
+		player.x = map.P_Start_Loc[client.my_player_id].x;
+		player.y = map.P_Start_Loc[client.my_player_id].y;
+		player.DOWN = false;
+		player.is_in_air = false;
+		player.window_move = true;
+	}
+
 	switch (idEvent)
 	{
 	case 1:
@@ -990,12 +1002,12 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 						CloseGameWindow(hWnd);
 						CreateEditWindow(g_hinst);
 					}
-					map = init_map(Desk_rect, &player, ++selected_map);
-					player.x = map.P_Start_Loc[0].x;
-					player.y = map.P_Start_Loc[0].y;
-					player.DOWN = false;
-					player.is_in_air = false;
-					player.window_move = true;
+					//map = init_map(Desk_rect, &player, ++selected_map);
+					//player.x = map.P_Start_Loc[0].x;
+					//player.y = map.P_Start_Loc[0].y;
+					//player.DOWN = false;
+					//player.is_in_air = false;
+					//player.window_move = true;
 					break;
 				default:
 					break;

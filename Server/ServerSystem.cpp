@@ -235,6 +235,7 @@ void ServerSystem::HandleStartSessionRequest(CS_StartSessionRequestPacket* packe
     }
     else {
         Make_Defalt_Map();
+        now_map = 0;
     }
     BroadcastMapInfo(); // 모든 클라에게 전송
 
@@ -252,7 +253,7 @@ void ServerSystem::BroadcastMapInfo()
             if (m_clients[i] != INVALID_SOCKET)
             {
                 SC_MapInfoPacket info;
-                info.Init(server_map[j]);
+                info.Init(server_map[j], (char)j);
                 SendMapInfoPacket(i, &info);
             }
         }
@@ -385,9 +386,18 @@ void ServerSystem::CheckAllCollisions()
                     p.player_life--;
 
                 else if (server_map[now_map].objects[o].obj_type == Flag) {
-                    SendEventPacket(i, STAGE_CLEAR);
+                    // Broadcast STAGE_CLEAR to ALL connected clients
+                    for (int j = 0; j < MAX_PLAYERS; ++j) {
+                        if (m_clients[j] != INVALID_SOCKET) {
+                            SendEventPacket(j, STAGE_CLEAR);
+                        }
+                    }
+
                     // 기본 맵일 경우에는 서버에서 관리하는 현재 맵 정보도 하나 갱신
-                    if (map_type == 0 && now_map < 4) ++now_map;
+                    if (map_type == 0 && now_map < 3) {
+                        ++now_map;
+                    }
+                    return; // Stop processing collisions for this frame to prevent checking against new map with old coords
                 }
 
             }

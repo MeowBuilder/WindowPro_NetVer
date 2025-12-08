@@ -9,6 +9,7 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
     }
     Mapready = false;
     StartGame = false;
+    current_map_index = 0;
     InitializeCriticalSection(&m_map_cs);
     maprecvEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
@@ -249,12 +250,21 @@ void ClientSystem::HandleAssignID(SC_AssignIDPacket* packet) {
     }
 }
 
+void ClientSystem::SwitchToNextMap() {
+    EnterCriticalSection(&m_map_cs);
+    if (current_map_index < 3) {
+        current_map_index++;
+        printf("[Info] Switched to map index: %d\n", current_map_index);
+    }
+    LeaveCriticalSection(&m_map_cs);
+}
+
 void ClientSystem::HandleEvent(SC_EventPacket* packet) {
     printf("[Info] Handling Event: ");
     switch (packet->event_type) {
         case STAGE_CLEAR:
             printf("STAGE_CLEAR\n");
-            // TODO: 스테이지 클리어 UI 표시, 사운드 재생 등
+            SwitchToNextMap();
             break;
         case GAME_WIN:
             printf("GAME_WIN\n");
@@ -299,23 +309,24 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
     EnterCriticalSection(&m_map_cs);
 
     // 2. 적 상태 업데이트
-    for (int i = 0; i < m_map.enemy_count; ++i) {
-        m_map.enemys[i].is_alive = packet->enemies[i].is_alive;
-        if (m_map.enemys[i].is_alive) {
-            m_map.enemys[i].x = packet->enemies[i].pos.x;
-            m_map.enemys[i].y = packet->enemies[i].pos.y;
-            m_map.enemys[i].direction = packet->enemies[i].dir;
-            m_map.enemys[i].move_state = packet->enemies[i].move_state;
+    Map& current_map = m_maps[current_map_index];
+    for (int i = 0; i < current_map.enemy_count; ++i) {
+        current_map.enemys[i].is_alive = packet->enemies[i].is_alive;
+        if (current_map.enemys[i].is_alive) {
+            current_map.enemys[i].x = packet->enemies[i].pos.x;
+            current_map.enemys[i].y = packet->enemies[i].pos.y;
+            current_map.enemys[i].direction = packet->enemies[i].dir;
+            current_map.enemys[i].move_state = packet->enemies[i].move_state;
         }
     }
 
     // 3. 보스 상태 업데이트
-    if (m_map.boss_count > 0) {
-        m_map.boss.x = packet->boss.pos.x;
-        m_map.boss.y = packet->boss.pos.y;
-        m_map.boss.life = packet->boss.life;
-        m_map.boss.attack_time = packet->boss.attack_time;
-        // m_map.boss.dir = packet->boss.dir; // boss 구조체에 dir 없음
+    if (current_map.boss_count > 0) {
+        current_map.boss.x = packet->boss.pos.x;
+        current_map.boss.y = packet->boss.pos.y;
+        current_map.boss.life = packet->boss.life;
+        current_map.boss.attack_time = packet->boss.attack_time;
+        // current_map.boss.dir = packet->boss.dir; // boss 구조체에 dir 없음
     }
 
     LeaveCriticalSection(&m_map_cs);
@@ -325,12 +336,18 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 {
     EnterCriticalSection(&m_map_cs);
 
-    m_map = packet->mapInfo;
+    if (packet->map_index >= 0 && packet->map_index < 4) {
+        m_maps[packet->map_index] = packet->mapInfo;
+    }
 
     LeaveCriticalSection(&m_map_cs);
-    Mapready = true;
-    StartGame = true;
-    SetEvent(maprecvEvent);
+    
+    // Start game if map 0 is received
+    if (packet->map_index == 0) {
+        Mapready = true;
+        StartGame = true;
+        SetEvent(maprecvEvent);
+    }
 }
 
 void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
@@ -342,18 +359,28 @@ void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
 }
 
 
-Map ClientSystem::GetMap()
+Map ClientSystem::GetMap(int index)
 {
     Map temp_map;
 
-    WaitForSingleObject(maprecvEvent, INFINITE);
+    int target_index = (index == -1) ? current_map_index : index;
+
+    if (!Mapready) {
+        WaitForSingleObject(maprecvEvent, INFINITE);
+    }
 
     EnterCriticalSection(&m_map_cs);
-    temp_map = m_map;
+    temp_map = m_maps[target_index];
+
+    // Main.cpp에서 P_Start_Loc[my_id]를 사용하므로 여기서 미리 계산해서 채워둠
+    temp_map.P_Start_Loc[1].x = temp_map.P_Start_Loc[0].x + 100;
+    temp_map.P_Start_Loc[1].y = temp_map.P_Start_Loc[0].y;
+    temp_map.P_Start_Loc[2].x = temp_map.P_Start_Loc[0].x + 200;
+    temp_map.P_Start_Loc[2].y = temp_map.P_Start_Loc[0].y;
 
     players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
-    players[1] = Make_Player(temp_map.P_Start_Loc[0].x+100, temp_map.P_Start_Loc[0].y);
-    players[2] = Make_Player(temp_map.P_Start_Loc[0].x+200, temp_map.P_Start_Loc[0].y);
+    players[1] = Make_Player(temp_map.P_Start_Loc[1].x, temp_map.P_Start_Loc[1].y);
+    players[2] = Make_Player(temp_map.P_Start_Loc[2].x, temp_map.P_Start_Loc[2].y);
     for (size_t i = 0; i < 3; i++)
     {
         players[i].is_connected = true;
@@ -373,6 +400,14 @@ void ClientSystem::SendUploadMapPacket(CS_UploadMapPacket* packet)
 
 void ClientSystem::SendStartSessionRequestPacket(CS_StartSessionRequestPacket* packet)
 {
+    // Reset client-side map state when a new session request is sent
+    EnterCriticalSection(&m_map_cs);
+    current_map_index = 0; // Always start from map 0 for a new session
+    Mapready = false;
+    StartGame = false;
+    ResetEvent(maprecvEvent); // Reset the event so GetMap will wait for new map info
+    LeaveCriticalSection(&m_map_cs);
+
     packet->Encode();
     int sent = send(sock, (char*)packet, sizeof(CS_StartSessionRequestPacket), 0);
     printf("[CLIENT] Sent CS_StartSessionRequestPacket: %d bytes (sizeof=%zu)\n", sent, sizeof(CS_StartSessionRequestPacket));
