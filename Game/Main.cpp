@@ -48,9 +48,9 @@ int width = 1920;
 int height = 1080;
 
 //======================================================================
-// SendEndSessionRequest, 적 충돌처리 오류
-// 다른 사람 연결 없을때 창 없애기, 접속하지 않은 사람 창 안띄우기
-// 보스전, 플레이어 체력 동기화 오류, GameWin이벤트 만들기
+// SendEndSessionRequest 삭제
+// 보스전 서버에서 처리, 적충돌 서버에서 처리
+// GameWin이벤트 만들기
 //======================================================================
 
 HWND g_hIpInputDlg = NULL; // 전역 HWND로 선언
@@ -394,8 +394,25 @@ void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		map = client.GetMap();
 		player = Make_Player(map.P_Start_Loc[client.my_player_id].x, map.P_Start_Loc[client.my_player_id].y);
 
-		CreateGameWindow3(g_hinst);
-		CreateGameWindow2(g_hinst);
+		// Determine which other players are valid for Window 2 and 3
+		int other_p1 = -1;
+		int other_p2 = -1;
+		int count = 0;
+		for (int i = 0; i < 3; ++i) {
+			if (i == client.my_player_id) continue;
+			count++;
+			if (count == 1) other_p1 = i;
+			else if (count == 2) other_p2 = i;
+		}
+
+		// Create windows only if corresponding players are connected
+		if (other_p2 != -1 && client.getPlayer(other_p2)->is_connected) {
+			CreateGameWindow3(g_hinst);
+		}
+		if (other_p1 != -1 && client.getPlayer(other_p1)->is_connected) {
+			CreateGameWindow2(g_hinst);
+		}
+		
 		CreateGameWindow(g_hinst);
 		client.StartGame = false;
 	}
@@ -565,6 +582,11 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		hPlayer = client.getPlayer(i);
 		break;
 	}
+
+	if (!hPlayer->is_connected) {
+		DestroyWindow(hWnd);
+		return;
+	}
 	
 	Desk_rect = { 0,0,1920,1080 };
 	switch (idEvent)
@@ -660,6 +682,11 @@ void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			hPlayer = client.getPlayer(i);
 			break;
 		}
+	}
+
+	if (!hPlayer->is_connected) {
+		DestroyWindow(hWnd);
+		return;
 	}
 
 	Desk_rect = { 0,0,1920,1080 };
@@ -874,12 +901,11 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			{
 				continue;
 			}
-			Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
 
-			/*if (client.getPlayer(id)->is_connected)
+			if (client.getPlayer(id)->is_connected)
 			{
 				Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
-			}*/
+			}
 		}
 
 		// 4. 맵 오브젝트 그리기

@@ -322,7 +322,6 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
         current_map.boss.y = packet->boss.pos.y;
         current_map.boss.life = packet->boss.life;
         current_map.boss.attack_time = packet->boss.attack_time;
-        // current_map.boss.dir = packet->boss.dir; // boss 구조체에 dir 없음
     }
 
     LeaveCriticalSection(&m_map_cs);
@@ -374,13 +373,9 @@ Map ClientSystem::GetMap(int index)
     temp_map.P_Start_Loc[2].x = temp_map.P_Start_Loc[0].x + 200;
     temp_map.P_Start_Loc[2].y = temp_map.P_Start_Loc[0].y;
 
-    players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
-    players[1] = Make_Player(temp_map.P_Start_Loc[1].x, temp_map.P_Start_Loc[1].y);
-    players[2] = Make_Player(temp_map.P_Start_Loc[2].x, temp_map.P_Start_Loc[2].y);
-    for (size_t i = 0; i < 3; i++)
-    {
-        players[i].is_connected = true;
-    }
+    //players[0] = Make_Player(temp_map.P_Start_Loc[0].x, temp_map.P_Start_Loc[0].y);
+    //players[1] = Make_Player(temp_map.P_Start_Loc[1].x, temp_map.P_Start_Loc[1].y);
+    //players[2] = Make_Player(temp_map.P_Start_Loc[2].x, temp_map.P_Start_Loc[2].y);
 
     LeaveCriticalSection(&m_map_cs);
 
