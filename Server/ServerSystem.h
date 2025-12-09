@@ -85,8 +85,7 @@ private:
 
     CRITICAL_SECTION m_cs;               // 소켓 배열 보호용 임계영역 (멀티스레드-safe)
 
-
-
+    bool player_connected[MAX_PLAYERS];  // 현재 접속한 클라이언트 여부
 
     // 클라이언트별 Recv 스레드 생성
     void StartRecvThread(int client_id);
@@ -120,4 +119,8 @@ private:
     bool BroadcastGameState();           // 모든 클라이언트에게 상태 전송
 
     void Make_Defalt_Map();              // 기본 맵의 모든 정보 초기화
+
+    
+	bool SendJoinPlayer(int to_client, int joined_id); // 새로 접속한 플레이어 정보를 기존 플레이어에게 전송
+	bool SendExistingPlayersToNew(int new_client_id); // 기존 접속 플레이어 정보를 새로 접속한 플레이어에게 전송
 };
