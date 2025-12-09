@@ -1,4 +1,4 @@
-﻿#include "ServerSystem.h"
+#include "ServerSystem.h"
 
 #pragma region Constructor / Destructor
 
@@ -62,6 +62,10 @@ bool ServerSystem::Start(u_short port)
     if (m_listen == INVALID_SOCKET)
         return false;
 
+    // 서버 재시작 시 포트 점유 방지 
+    int reuse = 1;
+    setsockopt(m_listen, SOL_SOCKET, SO_REUSEADDR, (char*)&reuse, sizeof(reuse));
+
     SOCKADDR_IN addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
@@ -89,17 +93,38 @@ bool ServerSystem::AcceptClient()
             if (c == INVALID_SOCKET)
                 return false;
 
+			// Nagle 알고리즘 비활성화 -> 지연 없는 전송
+            int flag = 1;
+            setsockopt(c, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, sizeof(flag));
+
+			// Keep-Alive 옵션 활성화 -> 연결 유지
+            int keepAlive = 1;
+            setsockopt(c, SOL_SOCKET, SO_KEEPALIVE, (char*)&keepAlive, sizeof(keepAlive));
+
             // 임계영역 보호
             EnterCriticalSection(&m_cs);
             m_clients[i] = c;
+            player_connected[i] = true;   // 추가: 이 유저가 연결됨
             LeaveCriticalSection(&m_cs);
 
             printf("[SERVER] Client %d connected.\n", i);
 
-            // 접속한 클라이언트에게 자신 ID 부여
+            // 1) 접속한 클라이언트에게 자신 ID 부여
             SendAssignIDPacket(i, i);
 
-            // 개별 Recv thread 시작
+            // 2) 새 유저에게 기존 접속 유저 목록 전송
+            SendExistingPlayersToNew(i);   // 추가
+
+            // 3) 기존 유저들에게 "i번이 접속함" 알림 전송
+            for (int j = 0; j < MAX_PLAYERS; ++j)
+            {
+                if (j == i) continue;                // 자기 자신 제외
+                if (!player_connected[j]) continue;  // 접속 중인 유저만
+
+				SendJoinPlayer(j, i);                // 추가
+            }
+
+            // 4) 개별 Recv thread 시작
             StartRecvThread(i);
 
             return true;
@@ -464,11 +489,26 @@ bool ServerSystem::BroadcastGameState()
         {
             p.players[i].dir = Direction::LEFT;
         }
-        else{
+        else {
             p.players[i].dir = Direction::RIGHT;
         }
 
         p.players[i].window_move = src.window_move;
+    }
+
+   
+    // Enemy 상태 복사
+    Map& curmap = server_map[now_map];
+
+    for (int e = 0; e < curmap.enemy_count; e++)
+    {
+        Enemy& src = curmap.enemys[e];
+
+        p.enemies[e].is_alive = src.is_alive;
+        p.enemies[e].pos.x = src.x;
+        p.enemies[e].pos.y = src.y;
+        p.enemies[e].dir = src.direction;
+        p.enemies[e].move_state = src.move_state;
     }
 
     // 클라이언트들에게 전송
@@ -507,6 +547,8 @@ void ServerSystem::HandleDisconnect(int client_id)
     server_players[client_id].is_connected = false;
 
     LeaveCriticalSection(&m_cs); // 임계영역 종료
+    player_connected[client_id] = false;   // ★ 추가
+
 
     // 4. 다른 모든 클라이언트에게 접속 종료 사실을 알림 (패킷 전송)
     SC_DisconnectPacket packet(client_id);
@@ -756,3 +798,31 @@ void ServerSystem::LoadDefaultMap(int map_num)
 }
 
 #pragma endregion
+
+// 특정 클라이언트에게 다른 플레이어 접속 알림 전송
+bool ServerSystem::SendJoinPlayer(int to_client, int joined_id)
+{
+    // 패킷 생성
+    SC_PlayerJoinPacket packet(joined_id);
+    packet.Encode();  // 바이트 변환
+
+    // 해당 클라 소켓으로 전송
+    int result = send(m_clients[to_client], (char*)&packet, sizeof(packet), 0);
+
+    // 전송 길이가 정확해야 성공
+    return (result == sizeof(packet));
+}
+
+// 새로운 클라이언트에게 기존 접속 플레이어들 정보 전송
+bool ServerSystem::SendExistingPlayersToNew(int new_client_id)
+{
+    for (int i = 0; i < MAX_PLAYERS; i++)
+    {
+        if (i == new_client_id) continue;  // 자기 자신 제외
+        if (!player_connected[i]) continue; // 접속한 클라만
+
+        // C가 왔다면 → C에게 A, B 알려주기
+        SendJoinPlayer(new_client_id, i);
+    }
+    return true;
+}
