@@ -37,7 +37,7 @@ public:
     u_short my_player_id;
     bool StartGame;
     bool Mapready;
-
+    bool Die;
     static const int RECV_STREAM_BUFFER_SIZE = 65536;
 
     char	m_streamBuf[RECV_STREAM_BUFFER_SIZE];

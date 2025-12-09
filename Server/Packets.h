@@ -32,7 +32,7 @@ constexpr char SC_DISCONNECT = 15;
 constexpr char SC_PLAYER_JOIN = 16;
 
 // --- 이벤트 타입 정의 (프로젝트 계획서 기반) ---
-enum E_EventType { STAGE_CLEAR, GAME_WIN };
+enum E_EventType { STAGE_CLEAR, GAME_WIN, DIE };
 
 /*
  * --- 패킷 클래스 사용 가이드  ---

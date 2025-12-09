@@ -320,6 +320,8 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
     p.frame_counter = packet->frame_counter;
     p.player_life = packet->life;
     p.DOWN = packet->down;
+
+
     if (packet->dir == Direction::LEFT)
     {
         p.LEFT = true;
@@ -432,21 +434,17 @@ void ServerSystem::CheckAllCollisions()
 
         for (int i = 0; i < server_map[now_map].enemy_count; i++)
         {
-            if (IntersectRect(&dummy, &server_players[i].player_rt, &server_map[now_map].enemys[i].enemy_rect))
-            {
-                if (server_players[i].DOWN)
+            if(server_map[now_map].enemys[i].is_alive){
+                if (IntersectRect(&dummy, &server_players[i].player_rt, &server_map[now_map].enemys[i].enemy_rect))
                 {
-                    server_map[now_map].enemys[i].is_alive = false;
-                }
-                else
-                {
-                    server_players[i].x = server_map[now_map].P_Start_Loc[0].x;
-                    server_players[i].y = server_map[now_map].P_Start_Loc[0].y;
-                    server_players[i].DOWN = false;
-                    server_players[i].is_in_air = false;
-                    server_players[i].window_move = true;
-
-                    server_players[i].player_life--;
+                    if (server_players[i].DOWN)
+                    {
+                        server_map[now_map].enemys[i].is_alive = false;
+                    }
+                    else
+                    {
+                        SendEventPacket(i, DIE);
+                    }
                 }
             }
         }
@@ -508,6 +506,8 @@ bool ServerSystem::BroadcastGameState()
         p.players[i].life = src.player_life;
         p.players[i].walk_state = src.Walk_state;
         p.players[i].jump_state = src.Jump_state;
+
+        
         if (src.LEFT)
         {
             p.players[i].dir = Direction::LEFT;

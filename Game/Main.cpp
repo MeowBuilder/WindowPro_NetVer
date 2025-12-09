@@ -944,7 +944,16 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 	GetClientRect(hWnd, &wnd_rt);
 	GetWindowRect(hWnd, &window_rect);
+	if (client.Die) {
+		player.x = map.P_Start_Loc[0].x;
+		player.y = map.P_Start_Loc[0].y;
+		player.DOWN = false;
+		player.is_in_air = false;
+		player.window_move = true;
 
+		player.player_life--;
+		client.Die = false;
+	}
 	if (client.GetCurrentMapIndex() != selected_map && selected_map != 99)
 	{
 		selected_map = client.GetCurrentMapIndex();
@@ -1064,7 +1073,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				break;
 			}
 		}
-
+		/*
 		for (int i = 0; i < map.enemy_count; i++)
 		{
 			if (map.enemys[i].is_alive)
@@ -1087,7 +1096,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				}
 			}
 		}
-
+		*/
 		if (player.window_move)
 		{
 			MoveWindow(hWnd, std::clamp(player.x - (wnd_rt.right / 2),(long)0, (long)Desk_rect.right - (wnd_rt.right)), player.y - (wnd_rt.bottom / 2), 320, 320, true);

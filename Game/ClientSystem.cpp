@@ -266,6 +266,9 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
             printf("GAME_WIN\n");
             // TODO: 게임 승리 UI 표시, 게임 종료 처리 등
             break;
+        case DIE:
+            Die = true;
+            break;
         default:
             printf("Unknown Event Type: %d\n", packet->event_type);
             break;
