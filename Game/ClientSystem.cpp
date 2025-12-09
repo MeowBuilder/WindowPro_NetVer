@@ -2,7 +2,7 @@
 #include <cstdio>
 #include "resource_ip_dialog.h" // WM_USER_UPDATE_PLAYER_LIST를 사용하기 위해 추가
 
-ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_player_id(-1) {
+ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_player_id(-1), m_hMainWnd(NULL) {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("[Error] WSAStartup() failed\n");
@@ -79,12 +79,18 @@ bool ClientSystem::DoRecv()
     if (recv_len == SOCKET_ERROR)
     {
         printf("[Error] recv() failed: %d\n", WSAGetLastError());
+        if (m_hMainWnd) {
+             PostMessage(m_hMainWnd, WM_USER_SERVER_DISCONNECTED, 0, 0);
+        }
         Disconnect();
         return false;
     }
     if (recv_len == 0)
     {
         printf("[Info] server closed connection.\n");
+        if (m_hMainWnd) {
+             PostMessage(m_hMainWnd, WM_USER_SERVER_DISCONNECTED, 0, 0);
+        }
         Disconnect();
         return false;
     }
@@ -199,18 +205,8 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
         case SC_DISCONNECT: {
             SC_DisconnectPacket* p = (SC_DisconnectPacket*)packet_buf;
             p->Decode();
-            // p->Log(); // 디버깅용, 필요시 활성화
-
-            if (p->disconnected_player_id >= 0 && p->disconnected_player_id < 3) {
-                players[p->disconnected_player_id].is_connected = false;
-                printf("[Info] Player %hu disconnected.\n", p->disconnected_player_id);
-                // 다이얼로그가 열려 있다면 업데이트 메시지 전송
-                if (g_hIpInputDlg && IsWindow(g_hIpInputDlg)) {
-                    PostMessage(g_hIpInputDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
-                }
-            } else {
-                printf("[Warning] Received SC_DISCONNECT with invalid player ID: %hu\n", p->disconnected_player_id);
-            }
+            //p->Log(); // 디버깅용
+            HandleDisconnect(p);
             break;
         }
         case SC_MAP_UPLOAD_RSP: {
@@ -220,7 +216,7 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandleMapUploadResponse(p);
             break;
         }
-        case SC_PLAYER_JOIN: { // 새로 추가된 SC_PLAYER_JOIN 패킷 처리
+        case SC_PLAYER_JOIN: {
             SC_PlayerJoinPacket* p = (SC_PlayerJoinPacket*)packet_buf;
             p->Decode();
             p->Log(); // 디버깅용
@@ -310,15 +306,15 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
 
     // 2. 적 상태 업데이트
     Map& current_map = m_maps[current_map_index];
-    //for (int i = 0; i < current_map.enemy_count; ++i) {
-    //    current_map.enemys[i].is_alive = packet->enemies[i].is_alive;
-    //    if (current_map.enemys[i].is_alive) {
-    //        current_map.enemys[i].x = packet->enemies[i].pos.x;
-    //        current_map.enemys[i].y = packet->enemies[i].pos.y;
-    //        current_map.enemys[i].direction = packet->enemies[i].dir;
-    //        current_map.enemys[i].move_state = packet->enemies[i].move_state;
-    //    }
-    //}
+    for (int i = 0; i < current_map.enemy_count; ++i) {
+        current_map.enemys[i].is_alive = packet->enemies[i].is_alive;
+        if (current_map.enemys[i].is_alive) {
+            current_map.enemys[i].x = packet->enemies[i].pos.x;
+            current_map.enemys[i].y = packet->enemies[i].pos.y;
+            current_map.enemys[i].direction = packet->enemies[i].dir;
+            current_map.enemys[i].move_state = packet->enemies[i].move_state;
+        }
+    }
 
     // 3. 보스 상태 업데이트
     if (current_map.boss_count > 0) {
@@ -455,6 +451,54 @@ bool ClientSystem::SendEndSessionRequestPacket() {
     return true;
 }
 
+// [S->C] 다른 플레이어의 접속 종료를 알리는 패킷 처리
+void ClientSystem::HandleDisconnect(SC_DisconnectPacket* packet) {
+    u_short disconnected_player_id = packet->disconnected_player_id;
+
+    if (disconnected_player_id >= 0 && disconnected_player_id < 3) {
+        players[disconnected_player_id].is_connected = false;
+        printf("[Info] Player %hu disconnected.\n", disconnected_player_id);
+
+        // 다이얼로그가 열려 있다면 업데이트 메시지 전송
+        if (g_hIpInputDlg && IsWindow(g_hIpInputDlg)) {
+            PostMessage(g_hIpInputDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
+        }
+
+        // 만약 내 플레이어 ID가 접속 종료되었다면, 클라이언트 자체를 Disconnect 처리하고
+        // 메인 메뉴로 돌아가는 등의 추가 로직이 필요할 수 있습니다.
+        if (disconnected_player_id == my_player_id) {
+            printf("[Info] My player ID (%hu) was disconnected. Performing client-side cleanup.\n", my_player_id);
+            my_player_id = (u_short)-1; // Reset my ID
+            StartGame = false; // Stop game if it was running
+        }
+    } else {
+        printf("[Warning] Received SC_DISCONNECT with invalid player ID: %hu\n", disconnected_player_id);
+    }
+}
+
+void ClientSystem::SyncMapState(Map* targetMap) {
+    if (!targetMap) return;
+
+    EnterCriticalSection(&m_map_cs);
+
+    // Ensure we are using the correct map data
+    Map& sourceMap = m_maps[current_map_index];
+
+    // Sync Enemies
+    for (int i = 0; i < sourceMap.enemy_count; ++i) {
+        targetMap->enemys[i] = sourceMap.enemys[i];
+    }
+    // Note: If enemy_count can change dynamically from server, we should also sync enemy_count.
+    // For now assuming fixed count or handled by MapInfo.
+    
+    // Sync Boss
+    if (sourceMap.boss_count > 0) {
+        targetMap->boss = sourceMap.boss;
+    }
+
+    LeaveCriticalSection(&m_map_cs);
+}
+
 // [S->C] 새로운 플레이어의 접속을 알리는 패킷 처리
 void ClientSystem::HandlePlayerJoin(SC_PlayerJoinPacket* packet) {
     u_short joined_player_id = packet->joined_player_id;
@@ -470,7 +514,8 @@ void ClientSystem::HandlePlayerJoin(SC_PlayerJoinPacket* packet) {
         if (g_hIpInputDlg && IsWindow(g_hIpInputDlg)) {
             PostMessage(g_hIpInputDlg, WM_USER_UPDATE_PLAYER_LIST, 0, 0);
         }
-    } else {
+    }
+    else {
         printf("[Warning] Received SC_PLAYER_JOIN with invalid player ID: %hu\n", joined_player_id);
     }
 }

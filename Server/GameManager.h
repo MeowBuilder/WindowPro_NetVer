@@ -1,99 +1,85 @@
 #pragma once
-#include <windows.h>
-
-// ==== 서버 전용 Point ==== //
-struct Point {
-    int x;
-    int y;
-};
-
+#include <Windows.h>
+#include <algorithm>
 #define Size 24
 
-// ==== Player ==== //
-typedef struct {
-    u_short player_id;
-    bool is_connected;
+//구조체 선언 및 공용 함수등을 정의하는 헤더파일
 
-    int x, y;
-    int jump_count, jump_time;
+struct Point
+{
+	int x;
+	int y;
+};
 
-    int Walk_state;   // 0 idle / 1 left / 2 right
-    int Jump_state;   // 0 ground / 1 jump
-    bool is_in_air;
-
-    bool LEFT, RIGHT, UP, DOWN;
-
-    RECT player_rt;
-
-    int player_life;
-    int frame_counter;
-
-    bool window_move;
-} Player;
-
-// ==== Direction ==== //
 enum Direction {
-    LEFT,
-    RIGHT
+	LEFT,
+	RIGHT
 };
 
-// ==== Enemy ==== //
 typedef struct {
-    int x, y;
-    RECT enemy_rect;
-    bool is_alive;
-    Direction direction;
-    int move_state;
-    int on_block;
-} Enemy;
+	u_short player_id;
+	bool is_connected;
 
-// ==== Boss ==== //
+	int x, y, jump_count, jump_time;
+	int Walk_state, Jump_state;
+	bool is_in_air;
+	bool LEFT, RIGHT, UP, DOWN;//UP : 점프 DOWN : 찍기공격 중
+	RECT player_rt;
+	int player_life;
+	int frame_counter; // 프레임 카운터 추가
+
+	bool window_move;
+}Player;
+
 typedef struct {
-    int x, y;
-    RECT boss_rect;
-    int life;
-    int attack_time;
-} Boss;
+	int x, y;
+	RECT enemy_rect;
+	bool is_alive;
+	enum Direction direction;
+	int move_state;
+	int on_block;
+}Enemy;
 
-// ==== Block ==== //
 typedef struct {
-    int x, y;
-    RECT Block_rt;
-} Block;
+	int x, y;
+	RECT boss_rect;
+	int life;
 
-// ==== Object ==== //
+	int attack_time;
+}Boss;
+
+typedef struct {
+	int x, y;
+	RECT Block_rt;
+}Block;
+
 enum Object_type {
-    Spike,
-    Flag
+	Spike, Flag
 };
 
 typedef struct {
-    int x, y;
-    Object_type obj_type;
-    RECT Obj_rt;
-} Object;
+	int x, y;
+	Object_type obj_type;
+	RECT Obj_rt;
+}Object;
 
-// ==== Map ==== //
 typedef struct {
-    int Map_width, Map_height;
+	int Map_width, Map_height;
 
-    Block blocks[160];
-    int block_count;
+	Block blocks[160];
+	int block_count;
+	Object objects[160];
+	int object_count;
+	Enemy enemys[32];
+	int enemy_count;
 
-    Object objects[160];
-    int object_count;
+	Boss boss;
+	int boss_count;
 
-    Enemy enemys[32];
-    int enemy_count;
+	Point P_Start_Loc[3];
+	//int P_Start_Loc[0].x, P_Start_Loc[0].y;
+}Map;
 
-    Boss boss;
-    int boss_count;
-
-    Point P_Start_Loc[3];
-
-} Map;
-
-// ==== 함수 선언 ==== //
 Map init_map(RECT Desk_rect, Player* player, int map_num);
 
 Player Make_Player(int x, int y);

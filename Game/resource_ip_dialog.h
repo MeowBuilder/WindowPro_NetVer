@@ -12,4 +12,5 @@
 #define IDOK_START_GAME             1006 // Button to start the game
 
 // Custom Messages
-#define WM_USER_UPDATE_PLAYER_LIST  (WM_USER + 1)
+#define WM_USER_UPDATE_PLAYER_LIST (WM_USER + 1)
+#define WM_USER_SERVER_DISCONNECTED (WM_USER + 2)

@@ -1,198 +1,244 @@
 #include "GameManager.h"
 
-// ========================================
-// Player 생성
-// ========================================
-Player Make_Player(int x, int y)
-{
-    Player p{};
-    p.player_id = 0;
-    p.is_connected = false;
 
-    p.x = x;
-    p.y = y;
-
-    p.jump_count = 0;
-    p.jump_time = 0;
-
-    p.Walk_state = 0;
-    p.Jump_state = 0;
-    p.is_in_air = false;
-
-    p.LEFT = p.RIGHT = p.UP = p.DOWN = false;
-
-    p.player_rt = { x - Size, y - Size, x + Size, y + Size };
-
-    p.player_life = 3;
-    p.frame_counter = 0;
-
-    return p;
+Player Make_Player(int x, int y) {
+	Player newPlayer;
+	newPlayer.x = x;
+	newPlayer.y = y;
+	newPlayer.LEFT = newPlayer.RIGHT = newPlayer.UP = newPlayer.DOWN = false;
+	newPlayer.is_in_air = false;
+	newPlayer.jump_count = 0;
+	newPlayer.player_rt = { newPlayer.x - Size, newPlayer.y - Size, newPlayer.x + Size, newPlayer.y + Size };
+	newPlayer.player_life = 3;
+	newPlayer.Walk_state = 0; 
+	newPlayer.frame_counter = 0;
+	newPlayer.Jump_state = 0;
+	return newPlayer;
 }
 
-// ========================================
-// Enemy 생성
-// ========================================
-Enemy Make_Enemy(int start_x, int start_y, int block_num)
-{
-    Enemy e{};
-    e.x = start_x;
-    e.y = start_y;
-
-    e.enemy_rect = {
-        start_x - Size,
-        start_y - Size,
-        start_x + Size,
-        start_y + Size
-    };
-
-    e.is_alive = true;
-    e.direction = LEFT;
-    e.move_state = 0;
-    e.on_block = block_num;
-
-    return e;
+Enemy Make_Enemy(int start_x, int start_y, int block_num) {
+	Enemy newEnemy;
+	newEnemy.x = start_x;
+	newEnemy.y = start_y;
+	newEnemy.on_block = block_num;
+	newEnemy.enemy_rect = { newEnemy.x - Size, newEnemy.y - Size, newEnemy.x + Size, newEnemy.y + Size };
+	newEnemy.direction = LEFT;
+	newEnemy.is_alive = true;
+	return newEnemy;
 }
 
-// ========================================
-// 기본 맵 생성 (서버 전용)
-// ========================================
-Map init_map(RECT Desk_rect, Player* player, int map_num)
-{
-    Map map{};
-    map.Map_width = Desk_rect.right;
-    map.Map_height = Desk_rect.bottom;
+Map init_map(RECT Desk_rect, Player* player, int map_num) {
+	Map new_map;
+	int randomnum;
+	new_map.block_count = new_map.object_count = new_map.enemy_count = new_map.boss_count = 0;
+	switch (map_num)
+	{
+	case 0://0번 맵
 
-    map.block_count = 0;
-    map.object_count = 0;
-    map.enemy_count = 0;
-    map.boss_count = 0;
+		//맵 초기화 및 생성
 
-    int r = 0;
+		//맵 블럭 초기화
+		new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+		new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+		new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+		new_map.block_count++;
 
-    switch (map_num)
-    {
-    case 0:
-    {
-        // ----------------------------------
-        // 바닥 플랫폼(고정값)
-        // ----------------------------------
-        map.blocks[0].x = Desk_rect.right / 2;
-        map.blocks[0].y = Desk_rect.bottom - 100;
-        map.blocks[0].Block_rt = {
-            Desk_rect.left,
-            Desk_rect.bottom - 128,
-            Desk_rect.right,
-            Desk_rect.bottom
-        };
-        map.block_count++;
+		new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+		new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
 
-        // ----------------------------------
-        // 첫 번째 작은 발판
-        // ----------------------------------
-        map.blocks[1].x = Desk_rect.left + 448;
-        map.blocks[1].y = map.blocks[0].Block_rt.top - 96;
+		for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
+		{
+			randomnum = rand() % 2;
+			if (randomnum == 0)
+			{
+				new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+				new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 192;
+				new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+				new_map.block_count++;
+			}
+			else
+			{
+				new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 384;
+				new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+				new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 128,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 128,new_map.blocks[new_map.block_count].y + 32 };
+				new_map.block_count++;
+			}
+		}
 
-        map.blocks[1].Block_rt = {
-            map.blocks[1].x - 128,
-            map.blocks[1].y - 32,
-            map.blocks[1].x + 128,
-            map.blocks[1].y + 32
-        };
-        map.block_count++;
+		//맵 오브젝트 초기화
+		new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
 
-        // ----------------------------------
-        // 랜덤 플랫폼 생성
-        // ----------------------------------
-        for (int i = 0; i < (Desk_rect.right - 896) / 384; i++)
-        {
-            r = rand() % 2;
+		for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+		{
+			new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+			new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+			new_map.objects[new_map.object_count].obj_type = Spike;
+			new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+			new_map.object_count++;
+		}
 
-            int nextX = map.blocks[map.block_count - 1].x + 384;
-            int nextY = (r == 0)
-                ? map.blocks[0].Block_rt.top - 192
-                : map.blocks[0].Block_rt.top - 96;
+		new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + 48;
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Flag;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
 
-            map.blocks[map.block_count].x = nextX;
-            map.blocks[map.block_count].y = nextY;
+		//플레이어 생성
+		new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+		break;
+	case 1://1번 맵
 
-            map.blocks[map.block_count].Block_rt = {
-                nextX - 128, nextY - 32,
-                nextX + 128, nextY + 32
-            };
+		//맵 초기화 및 생성
 
-            map.block_count++;
-        }
+		//맵 블럭 초기화
+		new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+		new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+		new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+		new_map.block_count++;
 
-        // ----------------------------------
-        // 스파이크 1개
-        // ----------------------------------
-        map.objects[0].x = Desk_rect.left + 320;
-        map.objects[0].y = map.blocks[0].Block_rt.top - 8;
-        map.objects[0].obj_type = Spike;
+		new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+		new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
 
-        map.objects[0].Obj_rt = {
-            map.objects[0].x - Size,
-            map.objects[0].y - Size,
-            map.objects[0].x + Size,
-            map.objects[0].y + Size
-        };
-        map.object_count++;
+		for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
+			new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y - 192;
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+		}
 
-        // ----------------------------------
-        // 스파이크 여러 개
-        // ----------------------------------
-        for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
-        {
-            int nextX = map.objects[map.object_count - 1].x + (Size * 2);
+		//맵 오브젝트 초기화
+		new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
 
-            map.objects[map.object_count].x = nextX;
-            map.objects[map.object_count].y = map.blocks[0].Block_rt.top - 8;
-            map.objects[map.object_count].obj_type = Spike;
+		for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+		{
+			new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+			new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+			new_map.objects[new_map.object_count].obj_type = Spike;
+			new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+			new_map.object_count++;
+		}
+		
+		new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
+		new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Flag;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
+		
+		//플레이어 생성
+		new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+		break;
+	case 2://2번 맵
 
-            map.objects[map.object_count].Obj_rt = {
-                nextX - Size, map.objects[0].y - Size,
-                nextX + Size, map.objects[0].y + Size
-            };
+		//맵 초기화 및 생성
 
-            map.object_count++;
-        }
+		//맵 블럭 초기화
+		new_map.blocks[new_map.block_count].x = Desk_rect.right / 2;
+		new_map.blocks[new_map.block_count].y = (Desk_rect.bottom - 100);
+		new_map.blocks[new_map.block_count].Block_rt = { Desk_rect.left,Desk_rect.bottom - 128,Desk_rect.right,Desk_rect.bottom };
+		new_map.block_count++;
 
-        // ----------------------------------
-        // 깃발
-        // ----------------------------------
-        int fx = map.objects[map.object_count - 1].x + 48;
-        int fy = map.blocks[0].Block_rt.top - 8;
+		new_map.blocks[new_map.block_count].x = Desk_rect.left + 448;
+		new_map.blocks[new_map.block_count].y = new_map.blocks[0].Block_rt.top - 96;
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
 
-        map.objects[map.object_count].x = fx;
-        map.objects[map.object_count].y = fy;
-        map.objects[map.object_count].obj_type = Flag;
+		for (int i = 0; i < (Desk_rect.bottom - 192) / 240; i++)
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 320;
+			new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
+			while (new_map.blocks[new_map.block_count].y >= new_map.blocks[0].Block_rt.top)
+			{
+				new_map.blocks[new_map.block_count].y = new_map.blocks[new_map.block_count - 1].y + (rand() % 640 - 320);
+			}
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 64,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 64,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+			
+			new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[new_map.block_count - 1].x, new_map.blocks[new_map.block_count - 1].Block_rt.top - Size, new_map.block_count - 1);
+			new_map.enemy_count++;
+		}
 
-        map.objects[map.object_count].Obj_rt = {
-            fx - Size, fy - Size,
-            fx + Size, fy + Size
-        };
-        map.object_count++;
+		//맵 오브젝트 초기화
+		new_map.objects[new_map.object_count].x = Desk_rect.left + 320;
+		new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Spike;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
 
-        // ----------------------------------
-        // 플레이어 초기 위치
-        // ----------------------------------
-        map.P_Start_Loc[0] = {
-            Desk_rect.left + 64,
-            Desk_rect.bottom - 128
-        };
+		for (int i = 0; i < (Desk_rect.right - 640) / (Size * 2); i++)
+		{
+			new_map.objects[new_map.object_count].x = new_map.objects[new_map.object_count - 1].x + (Size * 2);
+			new_map.objects[new_map.object_count].y = new_map.blocks[0].Block_rt.top - 8;
+			new_map.objects[new_map.object_count].obj_type = Spike;
+			new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+			new_map.object_count++;
+		}
 
-        break;
-    }
+		new_map.objects[new_map.object_count].x = new_map.blocks[new_map.block_count - 1].Block_rt.right - Size;
+		new_map.objects[new_map.object_count].y = new_map.blocks[new_map.block_count - 1].Block_rt.top - 8;
+		new_map.objects[new_map.object_count].obj_type = Flag;
+		new_map.objects[new_map.object_count].Obj_rt = { (new_map.objects[new_map.object_count].x - Size),(new_map.objects[new_map.object_count].y - Size),(new_map.objects[new_map.object_count].x + Size),(new_map.objects[new_map.object_count].y + Size) };
+		new_map.object_count++;
 
-    default:
-        map.P_Start_Loc[0] = { Desk_rect.right / 2, Desk_rect.bottom / 2 };
-        break;
-    }
+		//플레이어 생성
+		new_map.P_Start_Loc[0].x = Desk_rect.left + 64;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom - 128;
+		break;
+	case 3://3번 맵(보스전)
 
-    // ----------------------------------
-    // 실제 플레이어 구조체 생성
-    // ----------------------------------
-    *player = Make_Player(map.P_Start_Loc[0].x, map.P_Start_Loc[0].y);
+		//맵 초기화 및 생성
 
-    return map;
+		//맵 블럭 초기화
+
+		new_map.blocks[new_map.block_count].x = Desk_rect.left + 100;
+		new_map.blocks[new_map.block_count].y = Desk_rect.bottom - 200;
+		new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
+		new_map.block_count++;
+
+		for (int i = 0; i < ((Desk_rect.right - 260) / 480); i++)
+		{
+			new_map.blocks[new_map.block_count].x = new_map.blocks[new_map.block_count - 1].x + 480;
+			new_map.blocks[new_map.block_count].y = Desk_rect.bottom - ((rand() % 256) + 160);
+			new_map.blocks[new_map.block_count].Block_rt = { new_map.blocks[new_map.block_count].x - 160,new_map.blocks[new_map.block_count].y - 32,new_map.blocks[new_map.block_count].x + 160,new_map.blocks[new_map.block_count].y + 32 };
+			new_map.block_count++;
+		}
+
+		new_map.enemys[new_map.enemy_count] = Make_Enemy(new_map.blocks[1].x, new_map.blocks[1].Block_rt.top - Size, 1);
+		new_map.enemy_count++;
+
+		//보스 초기화
+		new_map.boss.x = Desk_rect.right - 160;
+		new_map.boss.y = Desk_rect.bottom - 320;
+		new_map.boss.life = 3;
+		new_map.boss.boss_rect = { new_map.boss.x - 160,new_map.boss.y - 160,new_map.boss.x + 160,new_map.boss.y + 160 };
+		new_map.boss_count++;
+		new_map.boss.attack_time = 480;
+
+		//플레이어 생성
+		new_map.P_Start_Loc[0].x = new_map.blocks[0].x;
+		new_map.P_Start_Loc[0].y = new_map.blocks[0].Block_rt.top - Size;
+		break;
+	default:
+		//플레이어 생성
+		new_map.P_Start_Loc[0].x = Desk_rect.right/2;
+		new_map.P_Start_Loc[0].y = Desk_rect.bottom/2;
+		break;
+	}
+
+	*player = Make_Player(new_map.P_Start_Loc[0].x, new_map.P_Start_Loc[0].y);
+	return new_map;
 }

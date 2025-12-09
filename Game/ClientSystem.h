@@ -30,6 +30,9 @@ public:
     Player* getPlayer(int player_id) { return &players[player_id]; };
     SOCKET getSocket() { return sock; };
 
+    void SetMainWnd(HWND hWnd) { m_hMainWnd = hWnd; }
+    void SyncMapState(Map* targetMap);
+
     // 게임 상태
     u_short my_player_id;
     bool StartGame;
@@ -61,8 +64,12 @@ private:
     void HandleMapInfo(SC_MapInfoPacket* packet);
     void HandleMapUploadResponse(SC_MapUploadResponsePacket* packet);
     void HandlePlayerJoin(SC_PlayerJoinPacket* packet);
+    void HandleDisconnect(SC_DisconnectPacket* packet);
     void HandleGameState(SC_GameStatePacket* packet);
 
     // 스레드 함수
     static DWORD WINAPI ClientRecvThread(LPVOID lpParam);
+
+private:
+    HWND m_hMainWnd;
 };

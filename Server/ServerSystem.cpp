@@ -12,6 +12,7 @@ ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET)
     {
         m_clients[i] = INVALID_SOCKET;
         memset(&server_players[i], 0, sizeof(Player)); // 서버 authoritative 플레이어 정보
+        player_connected[i] = false;   // 추가: 초기 값 설정
     }
 
     // 임계영역 초기화 (멀티스레드 보호)
@@ -317,6 +318,7 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
     p.Walk_state = packet->walk_state;
     p.jump_count = packet->jump_state;
     p.frame_counter = packet->frame_counter;
+    p.player_life = 3;
 
     if (packet->dir == Direction::LEFT)
     {
@@ -401,10 +403,10 @@ void ServerSystem::CheckAllCollisions()
         if (m_clients[i] == INVALID_SOCKET) continue;
 
         Player& p = server_players[i];
+        RECT dummy;
 
         for (int o = 0; o < server_map[now_map].object_count; o++)
         {
-            RECT dummy;
             if (IntersectRect(&dummy, &p.player_rt, &server_map[now_map].objects[o].Obj_rt))
             {
                 if (server_map[now_map].objects[o].obj_type == Spike)
@@ -425,6 +427,27 @@ void ServerSystem::CheckAllCollisions()
                     return; // Stop processing collisions for this frame to prevent checking against new map with old coords
                 }
 
+            }
+        }
+
+        for (int i = 0; i < server_map[now_map].enemy_count; i++)
+        {
+            if (IntersectRect(&dummy, &server_players[i].player_rt, &server_map[now_map].enemys[i].enemy_rect))
+            {
+                if (server_players[i].DOWN)
+                {
+                    server_map[now_map].enemys[i].is_alive = false;
+                }
+                else
+                {
+                    server_players[i].x = server_map[now_map].P_Start_Loc[0].x;
+                    server_players[i].y = server_map[now_map].P_Start_Loc[0].y;
+                    server_players[i].DOWN = false;
+                    server_players[i].is_in_air = false;
+                    server_players[i].window_move = true;
+
+                    server_players[i].player_life--;
+                }
             }
         }
     }

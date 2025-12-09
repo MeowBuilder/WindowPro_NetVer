@@ -48,10 +48,9 @@ int width = 1920;
 int height = 1080;
 
 //======================================================================
-// 남은 문제(클라기준) Eidt -> Start하면 깃발 먹을때 Edit으로 튕김
-// 디스커넥트 핸들링(서버 꺼졌을 때 작동), SendEndSessionRequest
+// SendEndSessionRequest, 적 충돌처리 오류
 // 다른 사람 연결 없을때 창 없애기, 접속하지 않은 사람 창 안띄우기
-// 보스전 체력 동기화 오류, GameWin이벤트 만들기
+// 보스전, 플레이어 체력 동기화 오류, GameWin이벤트 만들기
 //======================================================================
 
 HWND g_hIpInputDlg = NULL; // 전역 HWND로 선언
@@ -244,6 +243,8 @@ INT_PTR CALLBACK IPInputDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
     ShowWindow(MainWindow, SW_HIDE);
     UpdateWindow(MainWindow);
 
+    client.SetMainWnd(MainWindow); // Set the main window handle for the client system
+
 	if (!MainWindow) {
 		MessageBox(nullptr, L"메인 윈도우 생성 실패", L"오류", MB_OK);
 		client.Disconnect();
@@ -270,6 +271,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	static HBITMAP Title_bitmap, Clear_bitmap, Start_bitmap, Exit_bitmap, Edit_bitmap;
 	static RECT Client_rect;
     switch (message) {
+	case WM_USER_SERVER_DISCONNECTED:
+		MessageBox(hWnd, L"서버와의 연결이 끊어졌습니다. 게임을 종료합니다.", L"연결 끊김", MB_OK | MB_ICONERROR);
+		PostQuitMessage(0);
+		break;
 	case WM_CREATE:
 		result = FMOD::System_Create(&ssystem);
 		if (result != FMOD_OK)
@@ -304,6 +309,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ssystem->playSound(sound2, 0, false, &channel);
 			Sleep(1000);
 
+			selected_map = 0; // Reset selected_map to 0 for normal game start
 			ShowWindow(hWnd, SW_HIDE);
 
 			client.SendStartSessionRequestPacket(&SSRP);
@@ -924,6 +930,9 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		player.window_move = true;
 	}
 
+    // Sync dynamic map entities (enemies, boss) from ClientSystem (Server data)
+    client.SyncMapState(&map);
+
 	switch (idEvent)
 	{
 	case 1:
@@ -942,6 +951,13 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 		if (player.player_life <= 0) {
 			CloseGameWindow(hWnd);
+		}
+
+
+		for (int i = 0; i < map.enemy_count; i++)
+		{
+			//Move_Enemy(&map.enemys[i], map.blocks[map.enemys[i].on_block], 3);
+			Update_Enemy_rect(&map.enemys[i]);
 		}
 
 		for (int i = 0; i < map.block_count; i++)
@@ -1044,12 +1060,6 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					}
 				}
 			}
-		}
-		
-		for (int i = 0; i < map.enemy_count; i++)
-		{
-			//Move_Enemy(&map.enemys[i], map.blocks[map.enemys[i].on_block], 3);
-			//Update_Enemy_rect(&map.enemys[i]);
 		}
 
 		if (player.window_move)
