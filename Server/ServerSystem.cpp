@@ -432,14 +432,14 @@ void ServerSystem::CheckAllCollisions()
             }
         }
 
-        for (int i = 0; i < server_map[now_map].enemy_count; i++)
+        for (int j = 0; j < server_map[now_map].enemy_count; j++)
         {
-            if(server_map[now_map].enemys[i].is_alive){
-                if (IntersectRect(&dummy, &server_players[i].player_rt, &server_map[now_map].enemys[i].enemy_rect))
+            if(server_map[now_map].enemys[j].is_alive){
+                if (IntersectRect(&dummy, &server_players[i].player_rt, &server_map[now_map].enemys[j].enemy_rect))
                 {
                     if (server_players[i].DOWN)
                     {
-                        server_map[now_map].enemys[i].is_alive = false;
+                        server_map[now_map].enemys[j].is_alive = false;
                     }
                     else
                     {
