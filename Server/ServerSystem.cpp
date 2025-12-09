@@ -403,16 +403,14 @@ void ServerSystem::CheckAllCollisions()
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
         if (m_clients[i] == INVALID_SOCKET) continue;
-
-        Player& p = server_players[i];
         RECT dummy;
 
         for (int o = 0; o < server_map[now_map].object_count; o++)
         {
-            if (IntersectRect(&dummy, &p.player_rt, &server_map[now_map].objects[o].Obj_rt))
+            if (IntersectRect(&dummy, &server_players[i].player_rt, &server_map[now_map].objects[o].Obj_rt))
             {
                 if (server_map[now_map].objects[o].obj_type == Spike)
-                    p.player_life--;
+                    server_players[i].player_life--;
 
                 else if (server_map[now_map].objects[o].obj_type == Flag) {
                     // Broadcast STAGE_CLEAR to ALL connected clients
