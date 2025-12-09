@@ -318,8 +318,8 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
     p.Walk_state = packet->walk_state;
     p.jump_count = packet->jump_state;
     p.frame_counter = packet->frame_counter;
-    p.player_life = 3;
-
+    p.player_life = packet->life;
+    p.DOWN = packet->down;
     if (packet->dir == Direction::LEFT)
     {
         p.LEFT = true;

@@ -361,7 +361,8 @@ public:
     int frame_counter; // 프레임 카운터 추가
     Direction dir;
     bool p_window_mv;
-
+    bool down;
+    int life;
     CS_PlayerUpdatePacket() {
         size = sizeof(CS_PlayerUpdatePacket);
         type = CS_PLAYER_UPDATE;
@@ -372,6 +373,8 @@ public:
         frame_counter = 0;
         dir = (Direction)0;
         p_window_mv = true;
+        down = false;
+        life = 3;
     }
 
     CS_PlayerUpdatePacket(u_short id, Player* player)
@@ -379,7 +382,6 @@ public:
         size = sizeof(CS_PlayerUpdatePacket);
         type = CS_PLAYER_UPDATE;
         player_id = id;
-
         pos = { player->x, player->y };
 
         walk_state = player->Walk_state;
@@ -394,6 +396,8 @@ public:
             dir = Direction::RIGHT;
         }
         p_window_mv = player->window_move;
+        down = player->DOWN;
+        life = player->player_life;
     }
 
     void Encode() {
@@ -405,6 +409,8 @@ public:
         jump_state = htonl(jump_state);
         frame_counter = htonl(frame_counter);
         dir = (Direction)htonl((int)dir);
+        life = htonl(life);
+       
     }
 
     void Decode() {
@@ -416,6 +422,7 @@ public:
         jump_state = ntohl(jump_state);
         frame_counter = ntohl(frame_counter);
         dir = (Direction)ntohl((int)dir);
+        life = ntohl(life);
     }
 
     void Log() const {
