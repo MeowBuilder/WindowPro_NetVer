@@ -959,6 +959,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		{
 			selected_map = 0;
 			client.Win = false;
+			client.SendEndSessionRequestPacket();
 			CloseGameWindow(hWnd);
 			//CreateEditWindow(g_hinst);
 			//CloseEditWindow(hWnd);
@@ -967,6 +968,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			
 			client.Win = false;
 			Clear = true;
+			client.SendEndSessionRequestPacket();
 			selected_map = 0;
 			CloseGameWindow(hWnd);
 			

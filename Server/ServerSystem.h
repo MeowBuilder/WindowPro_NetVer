@@ -82,7 +82,7 @@ private:
 
     SOCKET m_listen;                     // 서버 리슨 소켓
     SOCKET m_clients[MAX_PLAYERS];       // 접속 중인 각 클라이언트 소켓 배열
-
+    bool getFlag;
     CRITICAL_SECTION m_cs;               // 소켓 배열 보호용 임계영역 (멀티스레드-safe)
 
     bool player_connected[MAX_PLAYERS];  // 현재 접속한 클라이언트 여부

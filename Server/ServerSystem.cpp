@@ -7,6 +7,7 @@ ServerSystem::ServerSystem() : m_listen(INVALID_SOCKET)
 {
     now_map = 0;
     map_type = 0;
+    getFlag = false;
     // 모든 클라이언트 소켓 초기화
     for (int i = 0; i < MAX_PLAYERS; ++i)
     {
@@ -222,6 +223,14 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
     // 서버 authoritative 맵 갱신
     server_map[now_map] = packet->UploadMap;
     map_type = 99;
+    for (int i = 0; i < MAX_PLAYERS; ++i) {
+        server_players[i].x = server_map[now_map].P_Start_Loc[i].x;
+        server_players[i].y = server_map[now_map].P_Start_Loc[i].y;
+        server_players[i].player_rt = { server_players[i].x - Size,
+            server_players[i].y - Size,
+            server_players[i].x + Size,
+            server_players[i].y + Size };
+    }
     // 성공 응답 2025.11.30 추가함
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
@@ -299,7 +308,7 @@ void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, i
         printf("[Warning] Packet ID mismatch.\n");
 
     // HandleDisconnect 함수가 모든 정리 작업을 수행하므로 여기서는 호출만 합니다.
-    HandleDisconnect(client_id);
+    game_loop_running = false;
 }
 
 #pragma endregion
@@ -347,10 +356,10 @@ void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_
 // 서버 메인 게임 루프 ( authoritative update → broadcast )
 void ServerSystem::StartGameLoop()
 {
-    if (game_loop_running) return;
+    if (game_loop_running)
+        return;
 
     game_loop_running = true;
-
     std::thread([this]
         {
             while (game_loop_running)
@@ -364,6 +373,7 @@ void ServerSystem::StartGameLoop()
         }).detach();
 
     printf("[SERVER] Game loop started.\n");
+    getFlag = false;
 }
 
 #pragma endregion
@@ -412,11 +422,12 @@ void ServerSystem::CheckAllCollisions()
                 if (server_map[now_map].objects[o].obj_type == Spike)
                     server_players[i].player_life--;
 
-                else if (server_map[now_map].objects[o].obj_type == Flag) {
+                else if (server_map[now_map].objects[o].obj_type == Flag && getFlag == false) {
                     // Broadcast STAGE_CLEAR to ALL connected clients
                     // 만약 일반 맵이라면, STAGE CLEAR, 에딧 맵이면 GAME WIN을 보낸다.
                     // 보스 맵 다루는 거에서 보스 죽으면 GAME_WIN 보내주세요.
                     if (map_type != 0) {
+                        getFlag = true;
                         for (int j = 0; j < MAX_PLAYERS; ++j) {
                             if (m_clients[j] != INVALID_SOCKET) {
                                 SendEventPacket(j, GAME_WIN);
@@ -429,11 +440,10 @@ void ServerSystem::CheckAllCollisions()
                                 SendEventPacket(j, STAGE_CLEAR);
                             }
                         }
+                        ++now_map;
+                        printf("now map %d\n", now_map);
                     }
                     // 기본 맵일 경우에는 서버에서 관리하는 현재 맵 정보도 하나 갱신
-                    if (map_type == 0 && now_map < 3) {
-                        ++now_map;
-                    }
                     return; // Stop processing collisions for this frame to prevent checking against new map with old coords
                 }
 
