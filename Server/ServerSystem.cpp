@@ -221,7 +221,7 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
 {
     // 서버 authoritative 맵 갱신
     server_map[now_map] = packet->UploadMap;
-
+    map_type = 99;
     // 성공 응답 2025.11.30 추가함
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
@@ -414,12 +414,22 @@ void ServerSystem::CheckAllCollisions()
 
                 else if (server_map[now_map].objects[o].obj_type == Flag) {
                     // Broadcast STAGE_CLEAR to ALL connected clients
-                    for (int j = 0; j < MAX_PLAYERS; ++j) {
-                        if (m_clients[j] != INVALID_SOCKET) {
-                            SendEventPacket(j, STAGE_CLEAR);
+                    // 만약 일반 맵이라면, STAGE CLEAR, 에딧 맵이면 GAME WIN을 보낸다.
+                    // 보스 맵 다루는 거에서 보스 죽으면 GAME_WIN 보내주세요.
+                    if (map_type != 0) {
+                        for (int j = 0; j < MAX_PLAYERS; ++j) {
+                            if (m_clients[j] != INVALID_SOCKET) {
+                                SendEventPacket(j, GAME_WIN);
+                            }
                         }
                     }
-
+                    else if (map_type == 0 && now_map < 3) {
+                        for (int j = 0; j < MAX_PLAYERS; ++j) {
+                            if (m_clients[j] != INVALID_SOCKET) {
+                                SendEventPacket(j, STAGE_CLEAR);
+                            }
+                        }
+                    }
                     // 기본 맵일 경우에는 서버에서 관리하는 현재 맵 정보도 하나 갱신
                     if (map_type == 0 && now_map < 3) {
                         ++now_map;

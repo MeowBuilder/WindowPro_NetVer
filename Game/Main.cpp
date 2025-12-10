@@ -954,6 +954,22 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		player.player_life--;
 		client.Die = false;
 	}
+	if (client.Win) {
+		if (selected_map == 99)			// 에딧 맵일 경우
+		{
+			selected_map = 0;
+			CloseGameWindow(hWnd);
+			CreateEditWindow(g_hinst);
+		}
+		else {
+			
+			Clear = true;
+			selected_map = 0;
+			CloseGameWindow(hWnd);
+			
+		}
+		client.Win = false;
+	}
 	if (client.GetCurrentMapIndex() != selected_map && selected_map != 99)
 	{
 		selected_map = client.GetCurrentMapIndex();
@@ -1054,12 +1070,13 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					player.player_life--;
 					break;
 				case Flag:
+					/*
 					if (selected_map == 99)
 					{
 						selected_map = 0;
 						CloseGameWindow(hWnd);
 						CreateEditWindow(g_hinst);
-					}
+					}*/
 					//map = init_map(Desk_rect, &player, ++selected_map);
 					//player.x = map.P_Start_Loc[0].x;
 					//player.y = map.P_Start_Loc[0].y;

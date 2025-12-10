@@ -9,6 +9,7 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
     }
     Mapready = false;
     StartGame = false;
+    Win = false;
     current_map_index = 0;
     InitializeCriticalSection(&m_map_cs);
     maprecvEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -263,8 +264,7 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
             SwitchToNextMap();
             break;
         case GAME_WIN:
-            printf("GAME_WIN\n");
-            // TODO: 게임 승리 UI 표시, 게임 종료 처리 등
+            Win = true;
             break;
         case DIE:
             Die = true;

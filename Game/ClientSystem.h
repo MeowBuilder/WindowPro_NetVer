@@ -42,6 +42,8 @@ public:
 
     char	m_streamBuf[RECV_STREAM_BUFFER_SIZE];
     int		m_streamLen;
+
+    bool Win;
 private:
     // 네트워크
     SOCKET sock;
