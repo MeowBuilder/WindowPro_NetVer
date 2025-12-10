@@ -333,6 +333,7 @@ void ClientSystem::HandleGameState(SC_GameStatePacket* packet) {
 
 void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 {
+
     EnterCriticalSection(&m_map_cs);
 
     if (packet->map_index >= 0 && packet->map_index < 4) {
@@ -351,6 +352,7 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
     
 	Mapready = true;
 	StartGame = true;
+    Win = false;
 	SetEvent(maprecvEvent);
 }
 

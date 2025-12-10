@@ -958,18 +958,19 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		if (selected_map == 99)			// 에딧 맵일 경우
 		{
 			selected_map = 0;
+			client.Win = false;
 			CloseGameWindow(hWnd);
 			//CreateEditWindow(g_hinst);
 			//CloseEditWindow(hWnd);
 		}
 		else {
 			
+			client.Win = false;
 			Clear = true;
 			selected_map = 0;
 			CloseGameWindow(hWnd);
 			
 		}
-		client.Win = false;
 	}
 	if (client.GetCurrentMapIndex() != selected_map && selected_map != 99)
 	{
