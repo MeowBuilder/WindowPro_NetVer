@@ -1273,9 +1273,9 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				}
 			}
 
-			map.boss.attack_time--;
-			map.P_Start_Loc[0].x = map.blocks[0].x;
-			map.P_Start_Loc[0].y = map.blocks[0].Block_rt.top - Size;*/
+			map.boss.attack_time--;*/
+			map.P_Start_Loc[client.my_player_id].x = map.blocks[0].x;
+			map.P_Start_Loc[client.my_player_id].y = map.blocks[0].Block_rt.top - Size;
 		}
 
 		client.SendPlayerUpdatePacket(&player);
