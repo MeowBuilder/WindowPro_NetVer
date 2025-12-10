@@ -240,7 +240,7 @@ void ServerSystem::HandleMapUpload(CS_UploadMapPacket* packet, int client_id)
         if (m_clients[i] != INVALID_SOCKET)
         {
             SC_MapInfoPacket info;
-            info.Init(server_map[now_map]);
+            info.Init(server_map[now_map],99);
             SendMapInfoPacket(i, &info);
         }
     }
