@@ -11,6 +11,7 @@ ClientSystem::ClientSystem() : sock(INVALID_SOCKET), hRecvThread(NULL), my_playe
     StartGame = false;
     Win = false;
     current_map_index = 0;
+    map_type = -1;
     InitializeCriticalSection(&m_map_cs);
     maprecvEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
@@ -336,22 +337,21 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
 
     if (packet->map_index >= 0 && packet->map_index < 4) {
         m_maps[packet->map_index] = packet->mapInfo;
+        map_type = 0;
     }
 
     if (packet->map_index == 99)
     {
         current_map_index = 0;
         m_maps[0] = packet->mapInfo;
+        map_type = 99;
     }
 
     LeaveCriticalSection(&m_map_cs);
     
-    // Start game if map 0 is received
-    if (packet->map_index == 0) {
-        Mapready = true;
-        StartGame = true;
-        SetEvent(maprecvEvent);
-    }
+	Mapready = true;
+	StartGame = true;
+	SetEvent(maprecvEvent);
 }
 
 void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
@@ -367,9 +367,8 @@ void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
 Map ClientSystem::GetMap(int index)
 {
     Map temp_map;
-
+    
     int target_index = (index == -1) ? current_map_index : index;
-
     if (!Mapready) {
         WaitForSingleObject(maprecvEvent, INFINITE);
     }

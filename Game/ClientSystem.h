@@ -26,6 +26,7 @@ public:
     Map GetMap(int index = -1);
     void SwitchToNextMap();
     int GetCurrentMapIndex() const { return current_map_index; }
+    u_short GetMapType() const { return map_type; }
 
     Player* getPlayer(int player_id) { return &players[player_id]; };
     SOCKET getSocket() { return sock; };
@@ -44,6 +45,7 @@ public:
     int		m_streamLen;
 
     bool Win;
+    u_short map_type;
 private:
     // 네트워크
     SOCKET sock;

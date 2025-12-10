@@ -393,7 +393,7 @@ void CALLBACK StartTimer(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 		map = client.GetMap();
 		player = Make_Player(map.P_Start_Loc[client.my_player_id].x, map.P_Start_Loc[client.my_player_id].y);
-
+		selected_map = client.GetMapType();
 		// Determine which other players are valid for Window 2 and 3
 		int other_p1 = -1;
 		int other_p2 = -1;
@@ -959,8 +959,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		{
 			selected_map = 0;
 			CloseGameWindow(hWnd);
-			CreateEditWindow(g_hinst);
-
+			//CreateEditWindow(g_hinst);
+			//CloseEditWindow(hWnd);
 		}
 		else {
 			
