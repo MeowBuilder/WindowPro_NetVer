@@ -335,15 +335,13 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
     EnterCriticalSection(&m_map_cs);
 
     if (packet->map_index >= 0 && packet->map_index < 4) {
-        if (packet->map_index == 99)
-        {
-            current_map_index = 0;
-            m_maps[0] = packet->mapInfo;
-        }
-        else
-        {
-            m_maps[packet->map_index] = packet->mapInfo;
-        }
+        m_maps[packet->map_index] = packet->mapInfo;
+    }
+
+    if (packet->map_index == 99)
+    {
+        current_map_index = 0;
+        m_maps[0] = packet->mapInfo;
     }
 
     LeaveCriticalSection(&m_map_cs);
