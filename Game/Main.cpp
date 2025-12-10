@@ -960,6 +960,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			selected_map = 0;
 			CloseGameWindow(hWnd);
 			CreateEditWindow(g_hinst);
+
 		}
 		else {
 			

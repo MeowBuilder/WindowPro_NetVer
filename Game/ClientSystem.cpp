@@ -359,6 +359,7 @@ void ClientSystem::HandleMapUploadResponse(SC_MapUploadResponsePacket* packet)
     if (packet->is_success)
     {
         StartGame = true;
+        Mapready = true;
     }
 }
 
