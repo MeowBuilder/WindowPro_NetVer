@@ -39,6 +39,7 @@ public:
     bool StartGame;
     bool Mapready;
     bool Die;
+    bool Boss_Hit;
     static const int RECV_STREAM_BUFFER_SIZE = 65536;
 
     char	m_streamBuf[RECV_STREAM_BUFFER_SIZE];
@@ -68,6 +69,7 @@ private:
     void HandleMapInfo(SC_MapInfoPacket* packet);
     void HandleMapUploadResponse(SC_MapUploadResponsePacket* packet);
     void HandlePlayerJoin(SC_PlayerJoinPacket* packet);
+    void HandleMapState(SC_MapStatePacket* packet);
     void HandleDisconnect(SC_DisconnectPacket* packet);
     void HandleGameState(SC_GameStatePacket* packet);
 

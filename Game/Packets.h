@@ -30,9 +30,10 @@ constexpr char SC_GAME_STATE = 13;
 constexpr char SC_EVENT = 14;
 constexpr char SC_DISCONNECT = 15;
 constexpr char SC_PLAYER_JOIN = 16;
+constexpr char SC_MAP_STATE = 17;
 
 // --- 이벤트 타입 정의 (프로젝트 계획서 기반) ---
-enum E_EventType { STAGE_CLEAR, GAME_WIN, DIE };
+enum E_EventType { STAGE_CLEAR, GAME_WIN, DIE, BOSS_HIT };
 
 /*
  * --- 패킷 클래스 사용 가이드  ---
@@ -785,6 +786,134 @@ public:
             printf("  Boss: Pos=(%d, %d), Life=%d, AttackTime=%d, Dir=%d\n",
                    boss.pos.x, boss.pos.y, boss.life, boss.attack_time, boss.dir);
         }
+    }
+};
+
+// [S->C] 보스전 맵 상태 변경 동기화 패킷
+class SC_MapStatePacket : public BasePacket {
+public:
+    Map mapState;
+
+    SC_MapStatePacket() {
+        size = sizeof(SC_MapStatePacket);
+        type = SC_MAP_STATE;
+        memset(&mapState, 0, sizeof(Map));
+    }
+
+    void Init(const Map& map) {
+        mapState = map;
+        size = sizeof(SC_MapStatePacket);
+        type = SC_MAP_STATE;
+    }
+
+    void ConvertRectEndian(RECT& rect) {
+        rect.left = htonl(rect.left);
+        rect.top = htonl(rect.top);
+        rect.right = htonl(rect.right);
+        rect.bottom = htonl(rect.bottom);
+    }
+
+    void RestoreRectEndian(RECT& rect) {
+        rect.left = ntohl(rect.left);
+        rect.top = ntohl(rect.top);
+        rect.right = ntohl(rect.right);
+        rect.bottom = ntohl(rect.bottom);
+    }
+
+    void Encode() {
+        size = htons(size);
+
+        mapState.Map_width = htonl(mapState.Map_width);
+        mapState.Map_height = htonl(mapState.Map_height);
+        mapState.block_count = htonl(mapState.block_count);
+        mapState.object_count = htonl(mapState.object_count);
+        mapState.enemy_count = htonl(mapState.enemy_count);
+        mapState.boss_count = htonl(mapState.boss_count);
+
+        for (int i = 0; i < 160; ++i) {
+            mapState.blocks[i].x = htonl(mapState.blocks[i].x);
+            mapState.blocks[i].y = htonl(mapState.blocks[i].y);
+            ConvertRectEndian(mapState.blocks[i].Block_rt);
+        }
+
+        for (int i = 0; i < 160; ++i) {
+            mapState.objects[i].x = htonl(mapState.objects[i].x);
+            mapState.objects[i].y = htonl(mapState.objects[i].y);
+            mapState.objects[i].obj_type = (Object_type)htonl(mapState.objects[i].obj_type);
+            ConvertRectEndian(mapState.objects[i].Obj_rt);
+        }
+
+        for (int i = 0; i < 32; ++i) {
+            mapState.enemys[i].x = htonl(mapState.enemys[i].x);
+            mapState.enemys[i].y = htonl(mapState.enemys[i].y);
+            ConvertRectEndian(mapState.enemys[i].enemy_rect);
+            mapState.enemys[i].direction = (Direction)htonl(mapState.enemys[i].direction);
+            mapState.enemys[i].move_state = htonl(mapState.enemys[i].move_state);
+            mapState.enemys[i].on_block = htonl(mapState.enemys[i].on_block);
+        }
+
+        mapState.boss.x = htonl(mapState.boss.x);
+        mapState.boss.y = htonl(mapState.boss.y);
+        ConvertRectEndian(mapState.boss.boss_rect);
+        mapState.boss.life = htonl(mapState.boss.life);
+        mapState.boss.attack_time = htonl(mapState.boss.attack_time);
+
+        for (int i = 0; i < 3; ++i) {
+            mapState.P_Start_Loc[i].x = htonl(mapState.P_Start_Loc[i].x);
+            mapState.P_Start_Loc[i].y = htonl(mapState.P_Start_Loc[i].y);
+        }
+    }
+
+    void Decode() {
+        size = ntohs(size);
+
+        mapState.Map_width = ntohl(mapState.Map_width);
+        mapState.Map_height = ntohl(mapState.Map_height);
+        mapState.block_count = ntohl(mapState.block_count);
+        mapState.object_count = ntohl(mapState.object_count);
+        mapState.enemy_count = ntohl(mapState.enemy_count);
+        mapState.boss_count = ntohl(mapState.boss_count);
+
+        for (int i = 0; i < 160; ++i) {
+            mapState.blocks[i].x = ntohl(mapState.blocks[i].x);
+            mapState.blocks[i].y = ntohl(mapState.blocks[i].y);
+            RestoreRectEndian(mapState.blocks[i].Block_rt);
+        }
+
+        for (int i = 0; i < 160; ++i) {
+            mapState.objects[i].x = ntohl(mapState.objects[i].x);
+            mapState.objects[i].y = ntohl(mapState.objects[i].y);
+            mapState.objects[i].obj_type = (Object_type)ntohl(mapState.objects[i].obj_type);
+            RestoreRectEndian(mapState.objects[i].Obj_rt);
+        }
+
+        for (int i = 0; i < 32; ++i) {
+            mapState.enemys[i].x = ntohl(mapState.enemys[i].x);
+            mapState.enemys[i].y = ntohl(mapState.enemys[i].y);
+            RestoreRectEndian(mapState.enemys[i].enemy_rect);
+            mapState.enemys[i].direction = (Direction)ntohl(mapState.enemys[i].direction);
+            mapState.enemys[i].move_state = ntohl(mapState.enemys[i].move_state);
+            mapState.enemys[i].on_block = ntohl(mapState.enemys[i].on_block);
+        }
+
+        mapState.boss.x = ntohl(mapState.boss.x);
+        mapState.boss.y = ntohl(mapState.boss.y);
+        RestoreRectEndian(mapState.boss.boss_rect);
+        mapState.boss.life = ntohl(mapState.boss.life);
+        mapState.boss.attack_time = ntohl(mapState.boss.attack_time);
+
+        for (int i = 0; i < 3; ++i) {
+            mapState.P_Start_Loc[i].x = ntohl(mapState.P_Start_Loc[i].x);
+            mapState.P_Start_Loc[i].y = ntohl(mapState.P_Start_Loc[i].y);
+        }
+    }
+
+    void Log() const {
+        printf("[SC_MapStatePacket] Type: %d, Size: %hu\n", type, size);
+        printf("  Block Count: %d\n", mapState.block_count);
+        printf("  Object Count: %d\n", mapState.object_count);
+        printf("  Enemy Count: %d\n", mapState.enemy_count);
+        printf("  Boss Count: %d\n", mapState.boss_count);
     }
 };
 

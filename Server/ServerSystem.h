@@ -116,7 +116,9 @@ private:
     // 루프 내 처리 함수들
     void UpdateAllPositions();           // 서버 authoritative 이동
     void CheckAllCollisions();           // 충돌 판정
+    void BossLogic();                    // 보스 로직
     bool BroadcastGameState();           // 모든 클라이언트에게 상태 전송
+    bool SyncMapState();                 // 보스전 맵 상태 동기화
 
     void Make_Defalt_Map();              // 기본 맵의 모든 정보 초기화
 

@@ -225,6 +225,13 @@ void ClientSystem::ProcessPacket(char* packet_buf) {
             HandlePlayerJoin(p);
             break;
         }
+        case SC_MAP_STATE: {
+            SC_MapStatePacket* p = (SC_MapStatePacket*)packet_buf;
+            p->Decode(); // 네트워크 바이트 순서에서 호스트 바이트 순서로 변환
+            // p->Log(); // 디버깅용, 필요시 활성화
+            HandleMapState(p);
+            break;
+        }
         // 다른 패킷 처리 케이스를 여기에 추가
         default: {
             printf("[Warning] Received unknown packet type: %d\n", base_p->type);
@@ -269,6 +276,9 @@ void ClientSystem::HandleEvent(SC_EventPacket* packet) {
             break;
         case DIE:
             Die = true;
+            break;
+        case BOSS_HIT:
+            Boss_Hit = true;
             break;
         default:
             printf("Unknown Event Type: %d\n", packet->event_type);
@@ -490,12 +500,17 @@ void ClientSystem::SyncMapState(Map* targetMap) {
     // Ensure we are using the correct map data
     Map& sourceMap = m_maps[current_map_index];
 
+    // Sync Blocks
+    targetMap->block_count = sourceMap.block_count;
+    for (int i = 0; i < sourceMap.block_count; ++i) {
+        targetMap->blocks[i] = sourceMap.blocks[i];
+    }
+
     // Sync Enemies
+    targetMap->enemy_count = sourceMap.enemy_count;
     for (int i = 0; i < sourceMap.enemy_count; ++i) {
         targetMap->enemys[i] = sourceMap.enemys[i];
     }
-    // Note: If enemy_count can change dynamically from server, we should also sync enemy_count.
-    // For now assuming fixed count or handled by MapInfo.
     
     // Sync Boss
     if (sourceMap.boss_count > 0) {
@@ -524,4 +539,15 @@ void ClientSystem::HandlePlayerJoin(SC_PlayerJoinPacket* packet) {
     else {
         printf("[Warning] Received SC_PLAYER_JOIN with invalid player ID: %hu\n", joined_player_id);
     }
+}
+
+void ClientSystem::HandleMapState(SC_MapStatePacket* packet) {
+    EnterCriticalSection(&m_map_cs);
+    // 현재 맵 인덱스의 맵 정보를 수신된 패킷의 맵 정보로 업데이트
+    // SC_GameStatePacket에서 이미 플레이어, 적, 보스 위치 등을 업데이트하므로,
+    // 여기서는 주로 블록/오브젝트의 추가/삭제/이동 등 맵 구조 자체의 변경에 집중.
+    // 사용자의 지시: "Handle함수에서는 현재 맵 정보를 받은 정보로 업데이트하기만 하면 될"
+    m_maps[current_map_index] = packet->mapState;
+    LeaveCriticalSection(&m_map_cs);
+    printf("[Info] Map state updated for current map index %d.\n", current_map_index);
 }

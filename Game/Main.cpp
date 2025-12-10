@@ -954,6 +954,18 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		player.player_life--;
 		client.Die = false;
 	}
+
+	if (client.Boss_Hit) {
+		player.x = map.P_Start_Loc[0].x;
+		player.y = map.P_Start_Loc[0].y;
+		player.DOWN = false;
+		player.is_in_air = false;
+		player.window_move = true;
+
+		player.player_life++;
+		client.Boss_Hit = false;
+	}
+
 	if (client.Win) {
 		if (selected_map == 99)			// 에딧 맵일 경우
 		{
@@ -974,6 +986,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 			
 		}
 	}
+
 	if (client.GetCurrentMapIndex() != selected_map && selected_map != 99)
 	{
 		selected_map = client.GetCurrentMapIndex();
@@ -1130,7 +1143,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		
 		if (map.boss_count != 0)
 		{
-			if (map.boss.attack_time <= 0)
+			/*if (map.boss.attack_time <= 0)
 			{
 				switch (map.boss.life)
 				{
@@ -1182,9 +1195,9 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 				default:
 					break;
 				}
-			}
+			}*/
 
-			if (IntersectRect(&temp_rt, &player.player_rt, &map.boss.boss_rect)) {
+			/*if (IntersectRect(&temp_rt, &player.player_rt, &map.boss.boss_rect)) {
 				if (player.DOWN)
 				{
 					map.boss.life--;
@@ -1211,7 +1224,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 					player.player_life--;
 				}
-			}
+			}*/
 
 			for (int i = 0; i < map.block_count; i++)
 			{
@@ -1223,7 +1236,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					}
 				}
 
-				if (map.blocks[i].x <= Desk_rect.left)
+				/*if (map.blocks[i].x <= Desk_rect.left)
 				{
 					for (int j = i; j < map.block_count - 1; j++)
 					{
@@ -1248,10 +1261,10 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 					
 				}
 				map.blocks[i].x--;
-				map.blocks[i].Block_rt = { map.blocks[i].Block_rt.left - 1, map.blocks[i].Block_rt.top, map.blocks[i].Block_rt.right - 1, map.blocks[i].Block_rt.bottom };
+				map.blocks[i].Block_rt = { map.blocks[i].Block_rt.left - 1, map.blocks[i].Block_rt.top, map.blocks[i].Block_rt.right - 1, map.blocks[i].Block_rt.bottom };*/
 			}
 
-			for (int i = 0; i < map.enemy_count; i++)
+			/*for (int i = 0; i < map.enemy_count; i++)
 			{
 				if (map.enemys[i].is_alive)
 				{
@@ -1262,7 +1275,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 
 			map.boss.attack_time--;
 			map.P_Start_Loc[0].x = map.blocks[0].x;
-			map.P_Start_Loc[0].y = map.blocks[0].Block_rt.top - Size;
+			map.P_Start_Loc[0].y = map.blocks[0].Block_rt.top - Size;*/
 		}
 
 		client.SendPlayerUpdatePacket(&player);

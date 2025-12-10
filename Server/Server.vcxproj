@@ -139,6 +139,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Game\GameManager.h" />
+    <ClInclude Include="Packets.h" />
     <ClInclude Include="Player&amp;Enemy.h" />
     <ClInclude Include="ServerSystem.h" />
   </ItemGroup>

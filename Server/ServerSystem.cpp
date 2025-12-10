@@ -366,6 +366,7 @@ void ServerSystem::StartGameLoop()
             {
                 UpdateAllPositions();   // 서버 기준 플레이어/적 이동
                 CheckAllCollisions();   // 스파이크/깃발 등 충돌
+                BossLogic();
                 BroadcastGameState();   // 모든 클라이언트에게 상태 전송
 
                 Sleep(30); // 33ms → 약 30FPS
@@ -468,8 +469,150 @@ void ServerSystem::CheckAllCollisions()
         }
     }
 }
-
 #pragma endregion
+
+
+void ServerSystem::BossLogic()
+{
+    if (server_map[now_map].boss_count != 0)
+    {
+        RECT Desk_rect = { 0,0,1920,1080 };
+        RECT temp_rt;
+        int randomnum;
+
+        if (server_map[now_map].boss.attack_time <= 0)
+        {
+            switch (server_map[now_map].boss.life)
+            {
+            case 1:
+                server_map[now_map].blocks[server_map[now_map].block_count].x = server_map[now_map].boss.x;
+                server_map[now_map].blocks[server_map[now_map].block_count].y = Desk_rect.bottom - ((rand() % 640) + 100);
+                server_map[now_map].blocks[server_map[now_map].block_count].Block_rt = { server_map[now_map].blocks[server_map[now_map].block_count].x - 40,server_map[now_map].blocks[server_map[now_map].block_count].y - 32,server_map[now_map].blocks[server_map[now_map].block_count].x + 40,server_map[now_map].blocks[server_map[now_map].block_count].y + 32 };
+                server_map[now_map].block_count++;
+
+                randomnum = rand() % 2;
+                if (randomnum == 0)
+                {
+                    server_map[now_map].enemys[server_map[now_map].enemy_count] = Make_Enemy(server_map[now_map].blocks[server_map[now_map].block_count - 1].x, server_map[now_map].blocks[server_map[now_map].block_count - 1].Block_rt.top - Size, server_map[now_map].block_count - 1);
+                    server_map[now_map].enemy_count++;
+                }
+
+                server_map[now_map].boss.attack_time = 160;
+                break;
+            case 2:
+                server_map[now_map].blocks[server_map[now_map].block_count].x = server_map[now_map].boss.x;
+                server_map[now_map].blocks[server_map[now_map].block_count].y = Desk_rect.bottom - ((rand() % 512) + 100);
+                server_map[now_map].blocks[server_map[now_map].block_count].Block_rt = { server_map[now_map].blocks[server_map[now_map].block_count].x - 80,server_map[now_map].blocks[server_map[now_map].block_count].y - 32,server_map[now_map].blocks[server_map[now_map].block_count].x + 80,server_map[now_map].blocks[server_map[now_map].block_count].y + 32 };
+                server_map[now_map].block_count++;
+
+                randomnum = rand() % 2;
+                if (randomnum == 0)
+                {
+                    server_map[now_map].enemys[server_map[now_map].enemy_count] = Make_Enemy(server_map[now_map].blocks[server_map[now_map].block_count - 1].x, server_map[now_map].blocks[server_map[now_map].block_count - 1].Block_rt.top - Size, server_map[now_map].block_count - 1);
+                    server_map[now_map].enemy_count++;
+                }
+
+                server_map[now_map].boss.attack_time = 320;
+                break;
+            case 3:
+                server_map[now_map].blocks[server_map[now_map].block_count].x = server_map[now_map].boss.x;
+                server_map[now_map].blocks[server_map[now_map].block_count].y = Desk_rect.bottom - ((rand() % 256) + 100);
+                server_map[now_map].blocks[server_map[now_map].block_count].Block_rt = { server_map[now_map].blocks[server_map[now_map].block_count].x - 160,server_map[now_map].blocks[server_map[now_map].block_count].y - 32,server_map[now_map].blocks[server_map[now_map].block_count].x + 160,server_map[now_map].blocks[server_map[now_map].block_count].y + 32 };
+                server_map[now_map].block_count++;
+
+                randomnum = rand() % 2;
+                if (randomnum == 0)
+                {
+                    server_map[now_map].enemys[server_map[now_map].enemy_count] = Make_Enemy(server_map[now_map].blocks[server_map[now_map].block_count - 1].x, server_map[now_map].blocks[server_map[now_map].block_count - 1].Block_rt.top - Size, server_map[now_map].block_count - 1);
+                    server_map[now_map].enemy_count++;
+                }
+
+                server_map[now_map].boss.attack_time = 480;
+                break;
+            default:
+                break;
+            }
+        }
+
+        for (int j = 0; j < MAX_PLAYERS; ++j) {
+            if (IntersectRect(&temp_rt, &server_players[j].player_rt, &server_map[now_map].boss.boss_rect)) {
+                if (server_players[j].DOWN)
+                {
+                    server_map[now_map].boss.life--;
+                    if (server_map[now_map].boss.life <= 0)
+                    {
+                        for (int i = 0; i < MAX_PLAYERS; ++i) {
+                            if (m_clients[i] != INVALID_SOCKET) {
+                                SendEventPacket(i, GAME_WIN);
+                            }
+                        }
+                        return;
+                    }
+                    SendEventPacket(j, BOSS_HIT);
+                }
+                else
+                {
+                    SendEventPacket(j, DIE);
+                }
+            }
+        }
+        
+
+        for (int i = 0; i < server_map[now_map].block_count; i++)
+        {
+            //if (player.x <= server_map[now_map].blocks[i].Block_rt.right && player.x >= server_map[now_map].blocks[i].Block_rt.left)
+            //{
+            //    if (player.y + Size >= server_map[now_map].blocks[i].Block_rt.top && player.y + Size < server_map[now_map].blocks[i].y)
+            //    {
+            //        player.x--;
+            //    }
+            //}
+
+            if (server_map[now_map].blocks[i].x <= Desk_rect.left)
+            {
+                for (int j = i; j < server_map[now_map].block_count - 1; j++)
+                {
+                    server_map[now_map].blocks[j] = server_map[now_map].blocks[j + 1];
+
+                    for (int k = 0; k < server_map[now_map].enemy_count; k++)
+                    {
+                        if (server_map[now_map].enemys[k].on_block == i)
+                        {
+                            for (int l = k; k < server_map[now_map].enemy_count; k++) {
+                                server_map[now_map].enemys[l] = server_map[now_map].enemys[l + 1];
+                            }
+                            server_map[now_map].enemy_count--;
+                        }
+                        else if (server_map[now_map].enemys[k].on_block == j + 1)
+                        {
+                            server_map[now_map].enemys[k].on_block = j;
+                        }
+                    }
+                }
+                server_map[now_map].block_count--;
+
+            }
+            server_map[now_map].blocks[i].x--;
+            server_map[now_map].blocks[i].Block_rt = { server_map[now_map].blocks[i].Block_rt.left - 1, server_map[now_map].blocks[i].Block_rt.top, server_map[now_map].blocks[i].Block_rt.right - 1, server_map[now_map].blocks[i].Block_rt.bottom };
+        }
+
+        for (int i = 0; i < server_map[now_map].enemy_count; i++)
+        {
+            if (server_map[now_map].enemys[i].is_alive)
+            {
+                server_map[now_map].enemys[i].x--;
+                Update_Enemy_rect(&server_map[now_map].enemys[i]);
+            }
+        }
+
+        server_map[now_map].boss.attack_time--;
+        server_map[now_map].P_Start_Loc[0].x = server_map[now_map].blocks[0].x;
+        server_map[now_map].P_Start_Loc[0].y = server_map[now_map].blocks[0].Block_rt.top - Size;
+
+        SyncMapState(); // 보스전 맵 상태 동기화
+    }
+}
+
 
 #pragma region Send Functions
 
@@ -552,6 +695,18 @@ bool ServerSystem::BroadcastGameState()
         p.enemies[e].move_state = src.move_state;
     }
 
+    // Boss 상태 복사
+    p.boss.is_active = (curmap.boss_count > 0);
+    if (p.boss.is_active) {
+        p.boss.pos.x = curmap.boss.x;
+        p.boss.pos.y = curmap.boss.y;
+        p.boss.life = curmap.boss.life;
+        p.boss.attack_time = curmap.boss.attack_time;
+        // boss.dir is not in Boss struct in GameManager.h but is in Packet
+        // Assuming default or derived from logic if needed, but for now 0
+        p.boss.dir = Direction::LEFT; // Default
+    }
+
     // 클라이언트들에게 전송
     for (int i = 0; i < MAX_PLAYERS; i++)
     {
@@ -563,6 +718,28 @@ bool ServerSystem::BroadcastGameState()
         }
     }
     return true;
+}
+
+// 보스전 맵 상태 동기화
+bool ServerSystem::SyncMapState()
+{
+    SC_MapStatePacket packet;
+    packet.Init(server_map[now_map]);
+    packet.Encode();
+
+    bool success = true;
+    // Broadcast to all connected clients
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        if (m_clients[i] != INVALID_SOCKET)
+        {
+            if (send(m_clients[i], (char*)&packet, sizeof(packet), 0) == SOCKET_ERROR)
+            {
+                success = false;
+            }
+        }
+    }
+    return success;
 }
 
 #pragma endregion
