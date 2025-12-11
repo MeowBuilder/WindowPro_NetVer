@@ -87,7 +87,7 @@ void Player_Move(Player *player,RECT window_rect) {
 
 	// 프레임 카운터 증가 (프레임 기반 애니메이션)
 	(*player).frame_counter++;
-	if ((*player).frame_counter >= 30){
+	if ((*player).frame_counter >= 60){
 		(*player).frame_counter = 0;
 	}
 

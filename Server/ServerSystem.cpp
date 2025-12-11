@@ -320,31 +320,33 @@ void ServerSystem::HandleEndSessionRequest(CS_EndSessionRequestPacket* packet, i
 // 서버 authoritative 플레이어 정보 갱신
 void ServerSystem::HandlePlayerUpdate(CS_PlayerUpdatePacket* packet, int client_id)
 {
-    Player& p = server_players[client_id];
+    
 
-    p.x = packet->pos.x;
-    p.y = packet->pos.y;
-    p.Walk_state = packet->walk_state;
-    p.jump_count = packet->jump_state;
-    p.frame_counter = packet->frame_counter;
-    p.player_life = packet->life;
-    p.DOWN = packet->down;
-
+    server_players[client_id].x = packet->pos.x;
+    server_players[client_id].y = packet->pos.y;
+    server_players[client_id].Walk_state = packet->walk_state;
+    server_players[client_id].jump_count = packet->jump_state;
+    server_players[client_id].frame_counter = packet->frame_counter;
+    server_players[client_id].player_life = packet->life;
+    server_players[client_id].DOWN = packet->down;
 
     if (packet->dir == Direction::LEFT)
     {
-        p.LEFT = true;
-        p.RIGHT = false;
+        server_players[client_id].LEFT = true;
+        server_players[client_id].RIGHT = false;
     }
     else
     {
-        p.LEFT = false;
-        p.RIGHT = true;
+        server_players[client_id].LEFT = false;
+        server_players[client_id].RIGHT = true;
     }
 
-    p.player_rt = { p.x - Size, p.y - Size, p.x + Size, p.y + Size };
+    server_players[client_id].player_rt = { server_players[client_id].x - Size,
+        server_players[client_id].y - Size,
+        server_players[client_id].x + Size,
+        server_players[client_id].y + Size };
 
-    p.window_move = packet->p_window_mv;
+    server_players[client_id].window_move = packet->p_window_mv;
 }
 
 #pragma endregion
@@ -668,6 +670,7 @@ bool ServerSystem::BroadcastGameState()
         p.players[i].walk_state = src.Walk_state;
         p.players[i].jump_state = src.Jump_state;
 
+        p.players[i].frame_counter = src.frame_counter;
         
         if (src.LEFT)
         {

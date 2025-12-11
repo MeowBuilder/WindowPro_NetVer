@@ -904,6 +904,10 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 			if (client.getPlayer(id)->is_connected)
 			{
+				Player p = *client.getPlayer(id);
+				if (p.frame_counter != 0) {
+					printf("hi\n");
+				}
 				Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
 			}
 		}
