@@ -347,6 +347,7 @@ void ClientSystem::HandleMapInfo(SC_MapInfoPacket* packet)
     EnterCriticalSection(&m_map_cs);
 
     if (packet->map_index >= 0 && packet->map_index < 4) {
+        current_map_index = 0;
         m_maps[packet->map_index] = packet->mapInfo;
         map_type = 0;
     }

@@ -583,7 +583,7 @@ void CALLBACK TimerProc2(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		break;
 	}
 
-	if (!hPlayer->is_connected) {
+	if (!hPlayer->is_connected || hPlayer->player_life <= 0) {
 		DestroyWindow(hWnd);
 		return;
 	}
@@ -684,7 +684,7 @@ void CALLBACK TimerProc3(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
 		}
 	}
 
-	if (!hPlayer->is_connected) {
+	if (!hPlayer->is_connected || hPlayer->player_life <= 0) {
 		DestroyWindow(hWnd);
 		return;
 	}
@@ -902,13 +902,14 @@ LRESULT CALLBACK WndProcGame(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				continue;
 			}
 
-			if (client.getPlayer(id)->is_connected)
+			Player p = *client.getPlayer(id);
+
+			if (p.is_connected && p.player_life > 0)
 			{
-				Player p = *client.getPlayer(id);
 				if (p.frame_counter != 0) {
 					printf("hi\n");
 				}
-				Player_Draw(&mdc, &resourcedc, Tino_bitmap, *client.getPlayer(id));
+				Player_Draw(&mdc, &resourcedc, Tino_bitmap, p);
 			}
 		}
 
